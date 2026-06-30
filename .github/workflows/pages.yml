@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@v6
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages
           folder: .
