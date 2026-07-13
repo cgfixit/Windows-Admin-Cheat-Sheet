@@ -1,0 +1,44 @@
+name: CI - HTML Website with Windows Scripts
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Batch scripts (.bat files)
+        shell: cmd
+        run: |
+          echo === Running your Batch commands ===
+          REM ←←← REPLACE THE LINES BELOW WITH YOUR ACTUAL .bat CALLS
+          REM call build.bat
+          REM call deploy.bat
+          REM or run all batch files automatically (use with caution):
+          REM for %%f in (*.bat) do echo Running %%f && call %%f
+          echo Batch execution complete.
+
+      - name: Run PowerShell scripts (.ps1 files)
+        shell: pwsh
+        run: |
+          Write-Host "=== Running your PowerShell commands/scripts ==="
+          # ←←← REPLACE THE LINES BELOW WITH YOUR ACTUAL .ps1 CALLS
+          # .\build.ps1
+          # .\validate-site.ps1 -Path "."
+          # or run all .ps1 files automatically (use with caution):
+          # Get-ChildItem -Recurse -Filter *.ps1 | ForEach-Object { Write-Host "Running $($_.Name)"; & $_.FullName }
+          Write-Host "PowerShell execution complete."
+
+      - name: Basic HTML site check (optional but useful)
+        shell: pwsh
+        run: |
+          Write-Host "Listing all HTML files (for quick visual verification)..."
+          Get-ChildItem -Recurse -Filter *.html | Select-Object FullName
+          Write-Host "HTML files discovered and ready."
