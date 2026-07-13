@@ -42,3 +42,29 @@ jobs:
           Write-Host "Listing all HTML files (for quick visual verification)..."
           Get-ChildItem -Recurse -Filter *.html | Select-Object FullName
           Write-Host "HTML files discovered and ready."
+
+      # ============================================================
+      # NEW: HTML validation with HTMLHint (added for quality gate)
+      # ============================================================
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate HTML files with HTMLHint
+        shell: pwsh
+        run: |
+          Write-Host "=== Validating HTML with HTMLHint ==="
+          Write-Host "Scanning all .html files for standards compliance, common errors, accessibility basics, and best practices..."
+          # 
+          # Uses npx (recommended, no global install needed). Works identically on windows-latest.
+          # HTMLHint automatically picks up a .htmlhintrc file in the repo root if present.
+          #
+          # BEHAVIOR:
+          # - Any rule violations → HTMLHint exits non-zero → this job FAILS (strict quality gate).
+          # - To make it non-blocking while you clean up existing issues, change the npx line to:
+          #     npx htmlhint "**/*.html" || true
+          #
+          # TIP: Run `npx htmlhint --init` locally to generate a starter .htmlhintrc, then customize.
+          npx htmlhint "**/*.html"
+          Write-Host "HTMLHint validation complete. Review the log above for any issues (file:line + rule name)."
