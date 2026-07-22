@@ -3,6 +3,8 @@
 Your comprehensive cheat sheet for modern Windows administration, troubleshooting, automation, and security.  
 Updated for Windows 11 24H2 / Server 2025 era. Curated by Chris Grady (@cgfixit)
 
+> 🐧🍎 **Cross-platform?** See the companion [**Linux & macOS Admin Cheat Sheet**](./Linux-Mac-Admin-Cheat-Sheet.md) — RHEL, Ubuntu, Fedora, and macOS one-liners, mirroring this sheet's structure.
+
 ## 🔍 Quick PowerShell One-Liners
 
 | Task                        | Command                                                                 |
