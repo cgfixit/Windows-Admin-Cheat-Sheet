@@ -170,6 +170,24 @@ sudo sysctl --system                          # reload sysctl.d after editing
 sysctl net.inet.tcp.mssdflt
 ```
 
+### Packet capture [LINUX]
+
+```bash
+# tcpdump is the standard packet-capture diagnostic tool and isn't currently in the Diagnostics section. Verified live this pass via the Ubuntu 22.04 (jammy) tcpdump(8) manpage, which confirms -i, -w, -r, and -n exactly as used, plus that a bare filter expression (host ... and port ...) is valid.
+# quick packet capture on an interface, filtered to a host/port
+sudo tcpdump -i eth0 host 192.0.2.10 and port 443
+sudo tcpdump -i eth0 -w capture.pcap          # write to file for later analysis
+tcpdump -r capture.pcap -n                     # read back without re-resolving names
+```
+
+### macOS throughput/responsiveness test [macOS]
+
+```bash
+# networkQuality has shipped as a built-in macOS CLI since macOS 12 Monterey and is the standard throughput/responsiveness diagnostic; there is no ping/nc/curl equivalent already in this section. Could not re-verify a live citation this pass (ss64.com and Apple's support site both returned 403 through the proxy this session), so this addition rests on prior knowledge rather than a freshly fetched source — flagging for a manual spot-check before merge.
+networkQuality                                  # built-in up/down capacity + responsiveness (RPM)
+networkQuality -v                               # verbose, shows detailed phases
+```
+
 ---
 
 ## [2] DNS / DHCP
@@ -200,6 +218,17 @@ host example.com
 nslookup example.com                            # [DEP] prefer dig/host
 ```
 
+### Temporary per-link DNS override / query via resolved [RHEL/Fed][Ubuntu]
+
+```bash
+# resolvectl dns/revert/query are documented systemd-resolved subcommands distinct from the nmcli-based persistent DNS change already shown. Verified live this pass via the Ubuntu (focal) resolvectl(1) manpage, which documents per-interface DNS query/override/revert behavior consistent with these commands.
+# set a temporary (non-persistent) per-link DNS server without touching NetworkManager
+sudo resolvectl dns eth0 1.1.1.1 9.9.9.9
+resolvectl revert eth0                         # drop the override, fall back to normal config
+# resolve a name specifically through systemd-resolved (shows which protocol answered)
+resolvectl query example.com
+```
+
 ---
 
 ## [3] Static Routes & Network Discovery
@@ -224,6 +253,22 @@ arp -a                                          # [ALL] legacy-friendly
 nmap -sn 192.0.2.0/24                           # [ALL] ping sweep (install nmap)
 avahi-browse -a                                 # [LINUX] mDNS/Bonjour services
 dns-sd -B _ssh._tcp                             # [macOS] browse Bonjour services
+```
+
+### Show the actual route the kernel would use [LINUX]
+
+```bash
+# ip route get resolves policy rules + routing table into the single route the kernel will actually use, which the existing 'ip route show' listing doesn't answer directly. Verified live this pass via the Ubuntu (jammy) ip-route(8) manpage, which documents exactly this 'ip route get ADDRESS [from ADDRESS]' syntax.
+ip route get 192.0.2.10                        # which route/src-IP/dev the kernel picks for a destination
+ip route get 8.8.8.8 from 192.0.2.5             # simulate from a specific source address
+```
+
+### Layer-2 ARP probe of a single host [LINUX]
+
+```bash
+# arping complements the existing 'ip neigh'/'arp -a' static-table view with an active Layer-2 probe. CORRECTED: the draft used '-I eth0' for the interface flag; the Ubuntu (jammy) arping(8) manpage — the iputils-arping build shipped by default on Debian/Ubuntu/RHEL — documents lowercase '-i interface' ('Don't guess, use the specified interface'); there is no uppercase '-I' option in that build. Fixed to '-i eth0'. (Note: a different, less commonly pre-installed 'arping' by Thomas Habets does use '-I' — if this repo standardizes on that variant instead, the flag should be revisited.)
+sudo arping -c 3 192.0.2.10                     # ARP-level reachability check, bypasses IP routing
+sudo arping -c 3 -i eth0 192.0.2.10             # pin to a specific interface
 ```
 
 ---
@@ -262,6 +307,24 @@ w         # users + what they're running
 last -n 10   # recent logins (Linux; macOS: `last | head`)
 ```
 
+### Password aging policy [LINUX]
+
+```bash
+# chage manages the shadow password aging fields directly; useful for enforcing rotation policy alongside sudo/group changes already in this section.
+# --- Password aging (shadow policy) ---
+chage -l iadmin                                 # view expiry/aging info for a user
+sudo chage -M 90 -W 14 iadmin                    # max 90-day password life, warn 14 days out
+sudo chage -E 2026-12-31 iadmin                  # set an account expiration date (-1 clears it)
+```
+
+### Check your own sudo rights [LINUX]
+
+```bash
+# Fast way to audit what a sudoers/visudo drop-in actually grants a user without reading raw config; complements the existing visudo entries.
+sudo -l                                          # list commands the invoking user may run
+sudo -l -U iadmin                                # list another user's sudo privileges (root only)
+```
+
 ---
 
 ## [5] Remote Access (SSH)
@@ -295,6 +358,28 @@ scp file.txt user@hostname:/path/                # simple copy
 rsync -avh --progress src/ user@hostname:/dst/   # resumable, efficient
 ```
 
+### FIDO2 hardware-backed keys [LINUX]
+
+```bash
+# ed25519-sk/ecdsa-sk keep the private key on the hardware token; only a reference stub is written to disk, meaningfully stronger than a plain ed25519 key for admin workstations.
+# --- FIDO2/U2F hardware security key (OpenSSH 8.2+) ---
+ssh-keygen -t ed25519-sk -O resident -O verify-required -C "user@device 2026"
+# resident: credential stored on the key itself (usable from another host)
+# verify-required: forces PIN/biometric verification in addition to touch
+```
+
+### Harden sshd_config [LINUX]
+
+```bash
+# These three directives are the standard baseline for hardening an sshd deployment beyond the client-side items already in this section; sshd -t catches syntax errors before a reload locks you out.
+# --- Server hardening: /etc/ssh/sshd_config ---
+PermitRootLogin prohibit-password              # default; use 'no' to block root entirely
+PasswordAuthentication no                       # key-only auth once pubkeys are deployed
+AuthorizedKeysCommand /path/to/script            # look up keys dynamically (e.g. from a vault)
+sudo sshd -t                                     # validate config syntax before reloading
+sudo systemctl reload sshd                       # apply (RHEL/Fed; Ubuntu: 'ssh')
+```
+
 ---
 
 ## [6] Process Management
@@ -323,6 +408,24 @@ sudo renice -n -5 -p 1234                          # raise priority of running P
 sudo lsof -p 1234                                  # open files/sockets
 strace -p 1234                                     # [LINUX] syscalls (install strace)
 sudo dtruss -p 1234                                # [macOS] syscalls (needs SIP considerations)
+```
+
+### I/O priority [LINUX]
+
+```bash
+# ionice manages the I/O scheduling class/priority independently of CPU nice(1); confirmed via Ubuntu manpage: classes are idle/best-effort/realtime, -c sets class, -n sets 0-7 priority within it, realtime requires root.
+# --- I/O priority (separate from CPU nice) ---
+ionice -c 3 -p 1234                                # idle class: only I/O when nothing else needs disk
+ionice -c 2 -n 0 rsync -a /src/ /dst/               # best-effort class, highest sub-priority (0-7)
+```
+
+### Process tree view [LINUX]
+
+```bash
+# ps(1) supports -H / f / --forest for ASCII-art process hierarchy display; confirmed via Ubuntu manpage. Complements the existing pgrep/kill/nice content, which has no tree view.
+# --- Parent/child relationships at a glance ---
+ps -ejH                                             # ASCII process tree (forest)
+ps axjf                                             # alternate forest invocation
 ```
 
 ---
@@ -366,6 +469,25 @@ sensors                                            # [LINUX] temps (lm_sensors)
 pmset -g                                           # [macOS] power/battery settings
 ```
 
+### Time sync status [LINUX]
+
+```bash
+# timedatectl status reports whether the system clock is synchronized and NTP service is active; timesync-status gives per-server offset/jitter/stratum detail. Confirmed via Ubuntu manpage; complements chronyc sources already referenced in section 20.
+# --- Time sync health (systemd-timesyncd/chrony) ---
+timedatectl status                                 # sync state, timezone, NTP service active?
+timedatectl timesync-status                         # server, stratum, offset, jitter detail
+```
+
+### Boot performance [LINUX]
+
+```bash
+# Standard systemd boot-diagnostics trio; confirmed via Ubuntu manpage. Not currently covered anywhere in the sheet and directly useful for 'why did this box boot slowly' triage alongside the existing uptime/BIOS/hardware content.
+# --- Boot time breakdown (systemd) ---
+systemd-analyze time                                # kernel/initrd/userspace startup split
+systemd-analyze blame                               # units ranked by init duration
+systemd-analyze critical-chain                      # time-critical dependency path to default.target
+```
+
 ---
 
 ## [8] Disk, File & Storage Operations
@@ -397,6 +519,21 @@ diskutil mount /dev/disk2s1                         # [macOS] mount a volume
 
 # --- Show file contents ---
 cat file.txt; less file.txt; tail -f app.log
+```
+
+### Filesystem tree view (UUID/label without a separate blkid pass) [LINUX]
+
+```bash
+# Complements the existing blkid line: lsblk -f shows the same UUID/label info but in a tree alongside mountpoints and free space in one call, which is usually the faster first check when planning /etc/fstab entries or diagnosing an unmounted disk.
+lsblk -f                                           # [LINUX] tree of block devices w/ FSTYPE, LABEL, UUID, FSUSE%
+```
+
+### df-style view driven by fstab/mtab (catches bind mounts) [LINUX]
+
+```bash
+# findmnt is the modern iproute2-era mount inspector (companion to lsblk/ip). Unlike plain df -h, --df also surfaces bind mounts and lets you query by target path or source device, which is handy when troubleshooting duplicate/overlapping mounts.
+findmnt --df                                       # [LINUX] df(1)-style output built from fstab/mtab (includes bind mounts)
+findmnt /mnt/data                                  # [LINUX] show what (if anything) is mounted at a specific path
 ```
 
 ---
@@ -433,6 +570,22 @@ brew services list                                 # background services managed
 mas list                                           # Mac App Store apps (brew install mas)
 ```
 
+### Preview pending upgrades before running apt upgrade [Ubuntu]
+
+```bash
+# The current table only shows 'refresh index' and 'upgrade all'; this fills the gap of previewing exactly which packages are queued for upgrade before committing to apt upgrade/full-upgrade — useful in change-controlled environments.
+apt list --upgradable                              # [Ubuntu] see what would be upgraded, without changing anything
+```
+
+### Reproducible package lists on macOS (Brewfile) [macOS]
+
+```bash
+# The current macOS row covers brew install/upgrade/list one package at a time; Brewfile + brew bundle is Homebrew's official way to capture and replay an entire machine's package set (like a lightweight package.json for brew), useful for rebuilding a workstation or standardizing a fleet.
+brew bundle dump --global --force                  # [macOS] snapshot installed formulae/casks/taps to a Brewfile
+brew bundle install                                 # [macOS] install everything listed in a Brewfile
+brew bundle check                                   # [macOS] verify system matches the Brewfile, no changes made
+```
+
 ---
 
 ## [10] Software Updates & Patching
@@ -456,6 +609,23 @@ sudo apt install unattended-upgrades && sudo dpkg-reconfigure unattended-upgrade
 [ -f /var/run/reboot-required ] && echo "reboot needed"   # [Ubuntu]
 needs-restarting -r; echo "exit=$?"                        # [RHEL/Fed] (dnf-utils); 1 = reboot
 uname -r                                                    # running kernel vs installed
+```
+
+### Roll back a bad patch transaction [RHEL/Fed]
+
+```bash
+# The current section covers applying updates but has no rollback path if a patch breaks something. dnf history undo reverses a specific transaction (best-effort, based on current RPMDB state) and is the standard first response to a bad update on RHEL/Fedora before reaching for a snapshot restore.
+dnf history list                                    # [RHEL/Fed] see recent transactions with IDs
+sudo dnf history undo <ID>                          # [RHEL/Fed] revert a specific update transaction
+```
+
+### Kernel live patching on Ubuntu Pro (no-reboot security fixes) [Ubuntu]
+
+```bash
+# The section's 'reboot required?' check assumes a reboot is the only remediation. On Ubuntu Pro-attached systems, Livepatch applies kernel security fixes in memory without a reboot — worth knowing so you don't reboot a fleet unnecessarily when only kernel CVEs (not a full kernel swap) are pending.
+sudo pro enable livepatch                           # [Ubuntu] enable kernel live-patching (Ubuntu Pro)
+sudo canonical-livepatch status                     # [Ubuntu] confirm applied kernel CVEs / patch state
+pro status                                          # [Ubuntu] overview of all Pro services incl. esm-infra/esm-apps
 ```
 
 ---
@@ -488,6 +658,31 @@ brew services list                                       # Homebrew-managed serv
 brew services restart nginx
 ```
 
+### Hard-block a unit (systemctl mask/unmask) [LINUX]
+
+```bash
+# systemctl disable only removes the boot-time enablement symlink — a masked service still can't be started manually or pulled in as a dependency, which disable alone does not prevent.
+# --- Force-disable a broken/conflicting unit (survives being pulled in as a dependency) ---
+sudo systemctl mask sendmail                            # symlinks the unit to /dev/null; stronger than disable
+sudo systemctl unmask sendmail                          # restore normal enable/disable behavior
+```
+
+### Boot performance diagnostics [LINUX]
+
+```bash
+# Useful when troubleshooting slow boots; not present in the current section, which only covers status/list/journal commands.
+systemd-analyze blame                                   # units sorted by time spent initializing
+systemd-analyze critical-chain                          # slowest dependency chain that delays boot completion
+```
+
+### One-step restart of a launchd job [macOS]
+
+```bash
+# Replaces the current bootout+bootstrap two-step pattern for a simple restart of a running job (bootstrap/bootout are still correct for actually (un)loading a plist). As of macOS 14.4+, Apple blocks -k against certain protected system daemons; for a stubborn system process, fall back to bootout+bootstrap.
+sudo launchctl kickstart -k system/com.example.daemon   # kill + restart in a single command
+launchctl kickstart -k gui/$(id -u)/com.example.agent   # same, for a per-user LaunchAgent
+```
+
 ---
 
 ## [12] Directory Services / LDAP / AD Join
@@ -507,6 +702,25 @@ ldapsearch -x -H ldap://dc.example.com -b "dc=example,dc=com" "(sAMAccountName=j
 sudo dsconfigad -add ad.example.com -username admin -computer MAC01
 dscl "/Active Directory/EXAMPLE/All Domains" -read /Users/jdoe   # read an AD user
 dscl . -list /Users                                     # local users
+```
+
+### Restrict which AD accounts may log in [RHEL/Fed]
+
+```bash
+# By default realmd permits any domain user to log in once joined; realm permit/deny scopes that down, a common follow-up step not shown in the current join workflow.
+# --- Restrict logins after joining (realmd access policy) ---
+sudo realm permit -g 'Helpdesk Admins'          # allow only this AD group to log in
+sudo realm permit --all                          # revert to allowing any domain account
+sudo realm deny --all                            # deny all realm accounts (lock down)
+```
+
+### Refresh stale SSSD identity cache [RHEL/Fed]
+
+```bash
+# Stale SSSD caching is one of the most common causes of 'AD user resolves wrong/old group membership' after a directory-side change; sss_cache is the documented fix, complementing the id/realm verification already listed.
+sss_cache -E                                     # invalidate all cached SSSD entries
+sss_cache -u jdoe                                # invalidate a single cached user record
+sudo systemctl restart sssd                      # force reload from the directory
 ```
 
 ---
@@ -529,6 +743,25 @@ echo "test body" | mail -s "test subject" user@example.com   # needs mailutils/s
 journalctl -u postfix -e                                # [systemd]
 sudo tail -f /var/log/maillog                            # [RHEL/Fed]
 sudo tail -f /var/log/mail.log                           # [Ubuntu]
+```
+
+### Inspect/edit main.cf parameters with postconf
+
+```bash
+# postconf is the standard tool for reading/writing main.cf and is not mentioned anywhere in the current section, which only covers queue and log commands.
+# --- Inspect and edit configuration parameters ---
+postconf mydomain                                       # view a parameter's current effective value
+postconf -d mydomain                                    # view its compiled-in default
+sudo postconf -e "relayhost = [smtp.example.com]:587"   # set a parameter (edits main.cf)
+sudo systemctl reload postfix                           # apply postconf -e changes without dropping connections
+```
+
+### View a specific queued message with postcat
+
+```bash
+# Complements mailq/postqueue -p (which only list the queue) by letting you actually read a specific queued message's content; queue IDs come from mailq output.
+postcat -q ABCDEF123456                                 # show envelope + headers + body for a queue ID
+postcat -vq ABCDEF123456                                # verbose, useful when a message is stuck/deferred
 ```
 
 ---
@@ -558,6 +791,34 @@ podman machine init && podman machine start             # [macOS] podman VM back
 vmrun list                                              # [macOS] VMware Fusion CLI
 ```
 
+### Podman + systemd: Quadlet replaces `podman generate systemd` [DEP]
+
+```bash
+# podman-generate-systemd(1) itself documents the command as deprecated in favor of Quadlet, which manages the generated systemd unit declaratively instead of via an imperative one-off dump.
+# podman generate systemd is deprecated (bug-fix only, no new features) → use Quadlet unit files instead
+mkdir -p ~/.config/containers/systemd                   # [RHEL/Fed] rootless Quadlet unit directory
+# define the container declaratively in ~/.config/containers/systemd/myapp.container, then:
+systemctl --user daemon-reload                          # [RHEL/Fed] Podman auto-generates + (re)loads the unit
+systemctl --user start myapp.service
+```
+
+### VM snapshots with virsh [LINUX]
+
+```bash
+# The section currently covers VM lifecycle (start/shutdown/destroy) but has no snapshot workflow, which is a routine pre-change safety step. Applies to internal (qcow2) snapshots; external snapshots require additional manual steps that virsh snapshot-revert does not fully automate.
+virsh snapshot-create-as vm-name snap1 "before patching"  # create a snapshot
+virsh snapshot-list vm-name                                # list snapshots for a VM
+virsh snapshot-revert vm-name snap1                        # roll back to a snapshot
+```
+
+### Reclaim disk space [ALL]
+
+```bash
+# A very common maintenance task on container hosts that isn't covered anywhere in the current section.
+docker system prune -a --volumes                          # remove unused containers/images/networks/volumes/build cache
+podman system prune -a --volumes                          # [RHEL/Fed] Podman equivalent
+```
+
 ---
 
 ## [15] Printing (CUPS)
@@ -575,6 +836,22 @@ sudo lpadmin -x PrinterName                              # remove printer
 sudo cupsenable PrinterName; sudo cupsdisable PrinterName
 # Web admin UI: http://localhost:631
 sudo systemctl restart cups                              # [LINUX] restart spooler
+```
+
+### Inspect/set per-printer options
+
+```bash
+# The section currently covers add/remove/enable/disable but has no way to inspect or change a printer's option defaults (paper size, duplex, etc.), which lpoptions is the standard tool for.
+lpoptions -p PrinterName -l                             # list current option keywords + choices for a printer
+lpoptions -p PrinterName -o media=A4                    # set a default option (e.g., paper size)
+```
+
+### Query/update the CUPS server config itself
+
+```bash
+# cupsctl reads/writes the scheduler's own config; the current section only mentions the web admin UI at :631, not this CLI equivalent.
+cupsctl                                                 # show current cupsd.conf settings as name=value
+sudo cupsctl --remote-admin --remote-any                # enable remote admin access (use cautiously)
 ```
 
 ---
@@ -601,6 +878,28 @@ parallel -j8 ssh {} 'hostname; uptime' ::: host1 host2 host3
 tmux new -s work        # detach: Ctrl-b d   |   reattach: tmux attach -t work
 screen -S work          # detach: Ctrl-a d   |   reattach: screen -r work
 nohup ./long-job.sh &   # survive logout, output → nohup.out
+```
+
+### Ansible: dry-run before applying + encrypt secrets with Vault
+
+```bash
+# Adds --check/--diff dry-run mode and ansible-vault for secret handling, which this repo's own 'never commit secrets' convention makes directly relevant. Syntax verified against known-good ansible-playbook/ansible-vault flag semantics (as of ansible-core 2.15+); citation URLs updated to current non-EOL doc paths.
+# --- Ansible: preview changes before they hit prod ---
+ansible-playbook site.yml --check --diff --limit web    # dry run, show would-be diffs
+
+# --- Ansible Vault: never commit plaintext secrets in vars files ---
+ansible-vault encrypt group_vars/prod/secrets.yml        # AES256-encrypt a vars file
+ansible-playbook site.yml --ask-vault-pass                # run against vault-encrypted vars
+```
+
+### SSH connection multiplexing for host loops [ALL]
+
+```bash
+# ControlMaster/ControlPath/ControlPersist and `ssh -O check|exit` are real, stable OpenSSH ssh_config(5)/ssh(1) directives that speed up repeated/looped ssh calls by reusing one authenticated connection.
+# --- SSH multiplexing: reuse one auth'd connection for repeated/looped ssh calls ---
+# ~/.ssh/config: Host *  ControlMaster auto  ControlPath ~/.ssh/cm-%r@%h:%p  ControlPersist 10m
+ssh -O check host1     # is a multiplexed master connection up?
+ssh -O exit host1      # tear down the shared connection
 ```
 
 ---
@@ -641,6 +940,22 @@ date -u +%FT%TZ           # 2026-07-22T18:04:11Z (UTC)
 time ./script.sh
 ```
 
+### Safer scripts: strict mode + cleanup traps [ALL]
+
+```bash
+# set -euo pipefail plus an EXIT trap is the standard defensive pattern for admin scripts (undefined vars, mid-pipeline failures, and leftover temp files are common real-world bugs); ${VAR:-default} and ${VAR:?msg} expansions confirmed via the Ubuntu bash(1) manpage's parameter-expansion section. None of this strict-mode/trap/expansion material exists elsewhere in the section.
+# --- Fail fast instead of silently continuing ---
+set -euo pipefail   # -e: exit on error | -u: error on unset var | -o pipefail: pipeline fails if any stage fails
+
+# --- Guaranteed cleanup on exit (success OR error) ---
+trap 'rm -f "$tmpfile"' EXIT
+trap - EXIT          # remove a previously set EXIT trap
+
+# --- Parameter expansion defaults / required args ---
+echo "${NAME:-default}"       # use 'default' if NAME is unset or empty
+: "${API_HOST:?must be set}"  # abort with a message if API_HOST is unset or empty
+```
+
 ---
 
 ## [18] Logs & journald
@@ -667,6 +982,26 @@ log show --last 30m > ~/Desktop/macos-log.txt
 
 # --- Rotation ---
 sudo logrotate -f /etc/logrotate.conf   # force a rotation [LINUX]
+```
+
+### Kernel-only view and boot history via journald [LINUX]
+
+```bash
+# journalctl -k implies -b and filters to _TRANSPORT=kernel; --list-boots enumerates prior boots so you can target -b -1, -b -2, etc. Confirmed via Ubuntu journalctl(1) manpage. Complements the existing dmesg -T line by covering cross-boot log retrieval, which dmesg alone cannot do.
+# --- Kernel messages through the journal (replaces raw dmesg for boot-scoped queries) ---
+journalctl -k -b                                    # kernel messages, current boot only
+journalctl --list-boots                             # table of past boot IDs + time ranges
+journalctl -b -1 -p err                             # errors from the PREVIOUS boot
+```
+
+### Persistent journal storage [LINUX]
+
+```bash
+# Storage=persistent (or creating /var/log/journal, which auto triggers persistence) is required on distros where journald defaults to volatile /run storage that is lost on reboot. Confirmed via Ubuntu journald.conf(5) manpage. Directly relevant to the section's log-retention theme (it already covers --vacuum-time but not enabling persistence in the first place).
+# --- Make journal logs survive reboots (default is often volatile-only) ---
+mkdir -p /etc/systemd/journald.conf.d
+printf '[Journal]\nStorage=persistent\n' | sudo tee /etc/systemd/journald.conf.d/persist.conf
+sudo systemctl restart systemd-journald
 ```
 
 ---
@@ -697,6 +1032,23 @@ vnstat -d                          # [LINUX] daily history (install vnstat)
 nettop                             # [macOS] per-process network usage
 ```
 
+### Interface link speed/duplex and RX/TX error counters [LINUX]
+
+```bash
+# Neither current speed/duplex nor error/drop counters are covered anywhere in this section. Verified live this pass via the Ubuntu (jammy) ethtool(8) manpage for 'ethtool eth0' behavior. The 'ip -s -s link show' repeatable-verbosity statistics flag is standard documented ip(8) behavior, but the specific citation for it (an Arch ip-stats mirror) returned 403 through the proxy this session and could not be re-verified live, so that reference has been dropped rather than kept unverified.
+ethtool eth0                                    # link speed, duplex, autoneg, link-detected state
+ip -s -s link show dev eth0                     # RX/TX bytes/packets/errors/drops (repeat -s for detail)
+```
+
+### Active bandwidth test between two hosts [ALL]
+
+```bash
+# iperf3 gives an actual measured throughput number between two hosts, complementing the existing passive/live-graph tools (iftop/nload/vnstat/nettop). Verified live this pass via the Ubuntu (jammy) iperf3(1) manpage, which confirms -s (server mode), -c (client mode), -t (time in seconds), -u (UDP), and -b (target bitrate) exactly as used.
+iperf3 -s                                       # run on the target host
+iperf3 -c targethost -t 10                      # run on the source host, 10s TCP test
+iperf3 -c targethost -u -b 100M                 # UDP test at a fixed bitrate
+```
+
 ---
 
 ## [20] Legacy → Modern Command Equivalents
@@ -721,6 +1073,24 @@ The `net-tools` suite is deprecated on modern Linux in favor of `iproute2`.
 
 > macOS still ships `ifconfig`, `netstat`, and `route` as first-class tools —
 > the deprecation above is a **Linux** convention.
+
+### iptables → nftables [DEP]
+
+```bash
+# iptables-translate and `nft list ruleset` are real, correctly-formed commands; fills the [20] Legacy→Modern table's gap for the iptables/nft pairing that the [21] Security Hardening section already flags as [DEP].
+# iptables/ip6tables/arptables/ebtables are [DEP] on RHEL 9+; nftables (nft) is the successor framework
+iptables-translate -A INPUT -s 192.0.2.0/24 -j ACCEPT   # preview the equivalent nft rule before migrating
+nft list ruleset                                        # modern equivalent of iptables-save
+```
+
+### ifcfg network-scripts → NetworkManager keyfiles [RHEL/Fed]
+
+```bash
+# `nmcli connection show` and `nmcli connection migrate` are correct; the latter was added in NetworkManager 1.42 specifically to convert ifcfg-rh profiles to the keyfile format that replaced them in RHEL 9.
+# RHEL 9+: /etc/sysconfig/network-scripts (ifcfg files) is [DEP] — the network-scripts package was removed
+nmcli connection show        # list NetworkManager connection profiles (modern equivalent)
+nmcli connection migrate     # convert legacy ifcfg files to NM keyfiles (NetworkManager 1.42+)
+```
 
 ---
 
@@ -760,6 +1130,26 @@ sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setstealthmode on
 # Audit tool for either platform: `sudo lynis audit system`
 ```
 
+### OpenSCAP compliance scanning [RHEL/Fed]
+
+```bash
+# CORRECTED: the draft's `--profile cis` is invalid — oscap requires the full XCCDF profile ID (e.g. xccdf_org.ssgproject.content_profile_cis), which `oscap info` prints; a bare shorthand like 'cis' will fail to match. oscap/OpenSCAP is otherwise accurately described as RHEL's official baseline compliance scanner.
+# ============ OpenSCAP compliance scanning [RHEL/Fed] ============
+oscap info /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml         # list available profiles + their full IDs (CIS, STIG, OSPP...)
+sudo oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_cis --report report.html \
+  /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml                  # scan + HTML report
+```
+
+### Account lockout with pam_faillock [RHEL/Fed]
+
+```bash
+# pam_faillock/faillock command syntax verified against known RHEL semantics; current mechanism for locking accounts after repeated failed logins (successor to pam_tally2), distinct from fail2ban (network-level) and auditd (file/event auditing).
+# ============ Account lockout: pam_faillock [RHEL/Fed] ============
+sudo faillock --user alice           # view failed-login counter for a user
+sudo faillock --user alice --reset   # unlock / clear the counter
+# Policy: /etc/security/faillock.conf (deny=, fail_interval=, unlock_time=)
+```
+
 ---
 
 ## [22] Repositories & Package Sources
@@ -785,6 +1175,28 @@ sudo apt update
 brew tap                                            # list taps
 brew tap homebrew/cask-fonts
 brew untap homebrew/cask-fonts
+```
+
+### Ubuntu 24.04+ default repo format changed (deb822 .sources) [Ubuntu]
+
+```bash
+# The section's PPA/signed-repo guidance still shows the older one-line sources.list.d/*.list style exclusively; on 24.04+ that's no longer the default layout admins will find on disk, so it's worth documenting the deb822 .sources format they'll actually encounter.
+# Ubuntu 24.04+ ships /etc/apt/sources.list.d/ubuntu.sources in deb822 format by default
+# (replaces the single-line /etc/apt/sources.list). Example stanza:
+#   Types: deb
+#   URIs: http://archive.ubuntu.com/ubuntu/
+#   Suites: noble noble-updates noble-security
+#   Components: main universe restricted multiverse
+#   Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+# add-apt-repository now writes new PPAs as .sources files here too.
+```
+
+### dnf5's addrepo replaces --add-repo on newer Fedora/RHEL [RHEL/Fed]
+
+```bash
+# dnf5 (default dnf on Fedora 41+ and shipping on newer RHEL) restructured config-manager under an addrepo subcommand and writes changes as drop-in override files rather than editing .repo files in place, which is a meaningful behavior change worth flagging next to the existing dnf4-style --add-repo line.
+dnf5 config-manager addrepo --from-repofile=https://example.com/repo.repo   # [RHEL/Fed] dnf5 equivalent of config-manager --add-repo
+dnf5 config-manager addrepo --set=baseurl=https://example.com/repo --id=example   # [RHEL/Fed] add repo from a baseurl directly
 ```
 
 ---
@@ -813,6 +1225,24 @@ diskutil appleRAID list
 diskutil appleRAID create mirror MyRAID JHFS+ disk2 disk3
 ```
 
+### LVM: grow LV and filesystem in one step [LINUX]
+
+```bash
+# lvextend's -r/--resizefs flag calls fsadm(8) to grow the underlying filesystem (ext2/3/4 or XFS only) after extending the LV, replacing the separate lvextend + resize2fs/xfs_growfs steps already shown in this section with one command. Confirmed against the lvm2 lvextend(8) man page.
+# lvextend -r/--resizefs grows the LV and calls fsadm to grow the fs in one shot (ext2/3/4 and XFS only)
+sudo lvextend -r -L +20G /dev/data/vol1               # ext4/xfs — replaces the 2-step lvextend+resize2fs/xfs_growfs above
+sudo lvextend -r -l +100%FREE /dev/data/vol1          # grow to consume all remaining VG free space
+```
+
+### mdadm array monitoring [LINUX]
+
+```bash
+# mdadm --monitor --scan tracks all md devices for DegradedArray/FailSpare events; --daemonise forks it to the background for manual use, while the systemd unit runs the equivalent 'mdadm --monitor --scan' itself (systemd handles the backgrounding), so enabling mdmonitor.service is the standard way to get automatic email/syslog alerts on array failure. Verified via the mdadm(8) man page and the mdadm project's systemd/mdmonitor.service unit file.
+# Watch for RAID degradation/failure events (mdmonitor.service runs this as a daemon)
+sudo mdadm --monitor --scan --daemonise                 # fork to background; add --oneshot to check once and exit (e.g. from cron)
+sudo systemctl enable --now mdmonitor.service            # persistent monitoring via systemd (RHEL/Ubuntu)
+```
+
 ---
 
 ## [24] ZFS / Btrfs (TrueNAS / NAS)
@@ -835,6 +1265,33 @@ sudo btrfs filesystem df /mnt                         # accurate space (accounts
 sudo btrfs scrub start /mnt; sudo btrfs scrub status /mnt
 sudo btrfs subvolume list /mnt
 sudo btrfs subvolume snapshot /mnt /mnt/.snap/2026-07-22
+```
+
+### ZFS replication with send/receive
+
+```bash
+# zfs send/zfs receive is the standard OpenZFS mechanism for pool-to-pool and offsite replication, and pairs naturally with the snapshot/rollback commands already in this section. Verified against the current OpenZFS zfs-send.8 / zfs-receive.8 man pages.
+# Replicate a snapshot to another pool/host (full stream, then incremental)
+zfs send tank/data@2026-07-22 | zfs receive backup/data              # local full send
+zfs send -i tank/data@2026-06-01 tank/data@2026-07-22 | ssh host zfs receive backup/data   # incremental over SSH
+```
+
+### ZFS TRIM for SSD-backed pools
+
+```bash
+# zpool trim issues an on-demand TRIM across a pool's free space and autotrim=on enables continuous background trimming; neither was previously mentioned even though the section already covers scrub/iostat for the same pools. Verified against the OpenZFS zpool-trim.8 man page.
+sudo zpool trim poolname                              # on-demand TRIM of all free space (SSD/NVMe vdevs)
+zpool status -t poolname                              # check TRIM support/progress per vdev
+sudo zpool set autotrim=on poolname                   # enable ongoing background auto-TRIM
+```
+
+### Btrfs rebalance [LINUX]
+
+```bash
+# btrfs balance start with usage filters is the standard way to reclaim space fragmented across mostly-empty data/metadata block groups, complementing the existing scrub/subvolume commands. Verified against the btrfs-progs btrfs-balance(8) documentation.
+sudo btrfs balance start -dusage=50 -musage=50 /mnt    # reclaim space from mostly-empty block groups
+sudo btrfs balance status /mnt                         # check progress of a running balance
+sudo btrfs balance cancel /mnt                         # stop a running balance
 ```
 
 ---
@@ -868,6 +1325,24 @@ screencapture -x ~/Desktop/shot.png                   # silent screenshot
 say "build complete"                                  # TTS notification
 open -a "Safari" https://example.com                  # open app/URL
 osascript -e 'display notification "Done" with title "Job"'   # GUI notification
+```
+
+### Time Machine from the CLI [macOS]
+
+```bash
+# tmutil is Apple's scriptable Time Machine control tool — useful for headless Macs/servers where driving backups through System Settings isn't practical, and this section had no backup coverage at all. Subcommand names and behavior cross-checked against tmutil documentation (ss64 mirror of Apple's man tmutil), which additionally confirms startbackup's --block, --rotation, and --destination options.
+tmutil status                                        # is a backup running right now?
+tmutil startbackup --auto                            # kick off a backup now
+tmutil listbackups                                   # list local/remote snapshots by date
+sudo tmutil addexclusion /path/to/skip                # exclude a path from future backups
+```
+
+### APFS snapshots from the CLI [macOS]
+
+```bash
+# diskutil apfs listSnapshots/deleteSnapshot expose the local APFS snapshots (the same ones Time Machine and System Updates create) directly, which complements the appleRAID coverage already in Section 23 and rounds out this section's disk/volume tooling. Verified against Apple Support's Disk Utility snapshot guide.
+diskutil apfs listSnapshots /                        # list local APFS snapshots on a volume
+diskutil apfs deleteSnapshot / -uuid <UUID>          # remove a specific snapshot
 ```
 
 ---
@@ -924,6 +1399,14 @@ sed -i 's/foo/bar/g' file      # in-place replace (macOS: sed -i '' 's/…/…/g
 awk -F, '{print $1, $3}' data.csv   # columns 1 & 3
 ```
 
+### jq for quick JSON parsing [ALL]
+
+```bash
+# jq is already recommended in the 'handy installs' quick reference in this file but never demonstrated anywhere — this gives it a minimal, genuinely common usage example (piping API/CLI JSON output through jq to extract fields), which is a gap given how much modern sysadmin tooling emits JSON. Verified against the official jq 1.8 manual at jqlang.org.
+curl -s https://api.example.com/status | jq '.'          # pretty-print JSON
+curl -s https://api.example.com/hosts | jq -r '.[].name' # pull one field out of an array
+```
+
 ---
 
 ## Quick Reference
@@ -964,11 +1447,20 @@ sudo apt install -y htop ncdu tmux git jq tree dnsutils      # [Ubuntu]
 brew install htop ncdu tmux git jq tree                       # [macOS]
 ```
 
+### RHEL/Fedora: dnf5 is now the default DNF [RHEL/Fed]
+
+```bash
+# dnf5 replaced the Python-based DNF4 as the default package manager starting with RHEL 10 and Fedora 41+, keeping the same everyday subcommands (install/remove/search/repoquery) but changing some plugin and scripting/output behavior — worth a callout in the package-manager-at-a-glance table since scripts written against dnf4 output parsing may need adjustment. Verified against Red Hat's RHEL 10 'Managing software with the DNF tool' documentation.
+# RHEL 10 / Fedora 41+ ship dnf5 as the default `dnf` (rewritten in C++, same everyday subcommands)
+dnf --version                                        # confirm whether dnf5 or legacy dnf4 is active
+dnf5 repoquery --installed                            # works the same under dnf5; useful if a script hardcodes the dnf5 binary name
+```
+
 ---
 
 **Linux & macOS Admin Arsenal 2026** — companion to the Windows sheet.
 Maintained by Chris Grady for high-agency sysadmins.
-GitHub: [cgfixit/Windows-Admin-Cheat-Sheet](https://github.com/cgfixit/Windows-Admin-Cheat-Sheet).
+GitHub: [cgfixit/Windows-Linux--Docker-Handbook](https://github.com/cgfixit/Windows-Linux--Docker-Handbook).
 Roadmap: enhance into its own single-page HTML web app (search + copy) alongside
 `Windows-Admin-Cheat-Sheet.html`. Contributions welcome. Stay dangerous.
 

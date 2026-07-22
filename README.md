@@ -3,7 +3,7 @@
 Your comprehensive cheat sheet for modern Windows administration, troubleshooting, automation, and security.  
 Updated for Windows 11 24H2 / Server 2025 era. Curated by Chris Grady (@cgfixit)
 
-> 🐧🍎 **Cross-platform?** See the companion [**Linux & macOS Admin Cheat Sheet**](./Linux-Mac-Admin-Cheat-Sheet.md) — RHEL, Ubuntu, Fedora, and macOS one-liners, mirroring this sheet's structure.
+> 🐧🍎🐳 **Cross-platform?** See the companion [**Linux & macOS Admin Cheat Sheet**](./Linux-Mac-Admin-Cheat-Sheet.md) — RHEL, Ubuntu, Fedora, and macOS one-liners, mirroring this sheet's structure — and the [**Docker & Containers Handbook**](./Docker-Containers.md) skeleton.
 
 ## 🔍 Quick PowerShell One-Liners
 
@@ -69,6 +69,6 @@ Updated for Windows 11 24H2 / Server 2025 era. Curated by Chris Grady (@cgfixit)
 ---
 
 **Windows Admin Arsenal 2026** — Maintained by Chris Grady for high-agency sysadmins.  
-GitHub: [CGFixIT/Windows-Admin-Cheat-Sheet](https://github.com/CGFixIT/Windows-Admin-Cheat-Sheet)  
-Live: https://cgfixit.github.io/Windows-Admin-Cheat-Sheet/  
+GitHub: [CGFixIT/Windows-Linux--Docker-Handbook](https://github.com/CGFixIT/Windows-Linux--Docker-Handbook)  
+Live: https://cgfixit.github.io/Windows-Linux--Docker-Handbook/  
 Contributions welcome. Stay dangerous.
