@@ -968,7 +968,7 @@ brew install htop ncdu tmux git jq tree                       # [macOS]
 
 **Linux & macOS Admin Arsenal 2026** — companion to the Windows sheet.
 Maintained by Chris Grady for high-agency sysadmins.
-GitHub: [cgfixit/Windows-Admin-Cheat-Sheet](https://github.com/cgfixit/Windows-Admin-Cheat-Sheet).
+GitHub: [cgfixit/Windows-Linux--Docker-Handbook](https://github.com/cgfixit/Windows-Linux--Docker-Handbook).
 Roadmap: enhance into its own single-page HTML web app (search + copy) alongside
 `Windows-Admin-Cheat-Sheet.html`. Contributions welcome. Stay dangerous.
 
