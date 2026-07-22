@@ -1,75 +1,102 @@
 # Windows - Linux - MacOS - Docker/Containers Arsenal 2026
 
-Your comprehensive cheat sheet for modern Windows administration, troubleshooting, automation, and security.  
-Updated for Windows 11 24H2 / Server 2019-2025 era. 
-> 🐧🍎🐳 **Cross-platform?** See the companion [**Linux & macOS Admin Cheat Sheet**](./Linux-Mac-Admin-Cheat-Sheet.md) — RHEL, Ubuntu, Fedora, and macOS one-liners, mirroring this sheet's structure — and the [**Docker & Containers Handbook**](./Docker-Containers.md) skeleton.
+One handbook, four platform families. Curated, security-conscious one-liners for
+modern system administration, troubleshooting, automation, and hardening —
+maintained by Chris Grady ([@cgfixit](https://github.com/cgfixit)).
 
-## 🔍 Quick PowerShell One-Liners
+The Windows and Linux/macOS sheets are plain Markdown, each backed by a
+**single-page web app** (instant search, per-command copy buttons, printable) —
+one HTML file, no build step, no tracking. Styling loads from CDN
+Tailwind/Font Awesome, so first load wants internet; everything else is local.
 
-| Task                        | Command                                                                 |
-|-----------------------------|-------------------------------------------------------------------------|
-| List all installed software | `Get-WmiObject -Class Win32_Product \| Select Name, Version`             |
-| Check disk space            | `Get-PSDrive -PSProvider FileSystem`                                    |
-| Restart service             | `Restart-Service -Name "Spooler"`                                      |
-| Export event logs           | `Get-EventLog -LogName System -Newest 100 \| Export-Csv events.csv`     |
-| Find large files            | `Get-ChildItem -Path C:\\ -Recurse -ErrorAction SilentlyContinue \| Sort-Object Length -Descending \| Select-Object -First 20` |
+## 🚀 Use it now
 
-## 💻 System Info & Diagnostics
+| Platform | Reference (Markdown) | Interactive web app |
+|----------|---------------------|---------------------|
+| 🪟 **Windows** — Server 2016/2019/2022/2025, Win10/11 | [`Windows-Admin-Cheat-Sheet.md`](./Windows-Admin-Cheat-Sheet.md) | [Live app](https://cgfixit.github.io/Windows-Linux--Docker-Handbook/Windows-Admin-Cheat-Sheet.html) |
+| 🐧🍎 **Linux & macOS** — RHEL/Rocky/Alma, Fedora, Ubuntu/Debian, macOS | [`Linux-Mac-Admin-Cheat-Sheet.md`](./Linux-Mac-Admin-Cheat-Sheet.md) | [Live app](https://cgfixit.github.io/Windows-Linux--Docker-Handbook/Linux-Mac-Admin-Cheat-Sheet.html) |
+| 🐳 **Docker / Containers** — Engine, CLI, Compose v2, Buildx | [`Docker-Containers.md`](./Docker-Containers.md) | *skeleton — web app coming* |
 
-- **Full system info:** `systeminfo`
-- **Hardware details:** `Get-ComputerInfo`
-- **BIOS info:** `Get-WmiObject win32_bios`
-- **Driver versions:** `Get-WmiObject Win32_PnPSignedDriver \| Select FriendlyName, DriverVersion`
-- **Check for updates:** `usoclient StartScan` or PowerShell: `Get-WindowsUpdate` (requires module)
+The Windows and Linux/macOS sheets each carry **26 numbered sections plus a
+quick-reference appendix**, mirrored in structure so the two stay parallel.
+The Docker sheet is an intentionally concise 13-section skeleton that will
+grow into a full sheet + web app.
 
-## 🛡️ Security & Compliance
+## ⚡ A taste of what's inside
 
-- Enable Windows Defender full scan: `Start-MpScan -ScanType FullScan`
-- Check BitLocker status: `Get-BitLockerVolume`
-- Reset local admin password: Use `net user administrator NewPass123!`
-- YARA scanning integration (your custom scripts): Place in PATH and run `yara64.exe -r rules.yar C:\\`
-- Event log security audit: `wevtutil qe Security /f:text`
+**Windows** (CMD / PowerShell / CIM)
 
-**Pro Tip:** Integrate with your CyClaw/PsyClaw RAG for automated YARA rule generation and health checks.
+| Task | Command |
+|------|---------|
+| Which process owns port 443 | `Get-Process -Id (Get-NetTCPConnection -LocalPort 443).OwningProcess` |
+| Test a remote port (no telnet) | `Test-NetConnection -ComputerName hostname -Port 443` |
+| System file repair (in this order) | `DISM /Online /Cleanup-Image /RestoreHealth` → `sfc /scannow` |
+| Update everything | `winget upgrade --all` |
+| Hardware + OS inventory | `Get-ComputerInfo` |
 
-## 📊 Performance & Monitoring
+**Linux** (RHEL / Fedora / Ubuntu)
 
-| Tool/Command                  | Use Case                        |
-|-------------------------------|---------------------------------|
-| Resource Monitor              | `resmon`                        |
-| Performance Monitor           | `perfmon`                       |
-| Process Explorer (Sysinternals) | Deep process analysis         |
-| Check CPU/RAM usage           | `Get-Counter '\Processor(*)\% Processor Time'` |
+| Task | Command |
+|------|---------|
+| Listening sockets + owning process | `ss -tulpn` |
+| Errors since boot | `journalctl -p err -b` |
+| Enable + start a service | `sudo systemctl enable --now sshd` *(Ubuntu: unit is `ssh`)* |
+| Interface addresses, briefly | `ip -br addr` |
+| Patch the box | `sudo dnf upgrade` / `sudo apt update && sudo apt full-upgrade` |
 
-## 🔧 Troubleshooting Common Issues
+**macOS**
 
-- SFC scan: `sfc /scannow`
-- DISM repair: `DISM /Online /Cleanup-Image /RestoreHealth`
-- Network reset: `netsh int ip reset` + `netsh winsock reset`
-- Clear DNS cache: `ipconfig /flushdns`
-- WinRE repair: Boot to recovery or `reagentc /enable`
+| Task | Command |
+|------|---------|
+| Flush DNS cache | `sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder` |
+| Built-in speed/responsiveness test | `networkQuality -v` |
+| Apply all Apple updates | `sudo softwareupdate -ia` |
+| Keep the Mac awake for 1h | `caffeinate -dimsu -t 3600` |
+| OS + build version | `sw_vers` |
 
-## ⚙️ Automation & Scripting
+**Docker**
 
-- Batch rename files: PowerShell foreach loop
-- Scheduled tasks: `schtasks` or `New-ScheduledTask`
-- Group Policy refresh: `gpupdate /force`
-- AD queries: `Get-ADUser` (RSAT tools)
-- Veeam-specific: Your custom PowerShell modules for backups/health checks
+| Task | Command |
+|------|---------|
+| What's running (or crashed) | `docker ps -a` |
+| Bring up a stack | `docker compose up -d` |
+| Shell into a container | `docker exec -it web sh` |
+| Follow logs | `docker logs -f web` |
+| Reclaim disk space | `docker system prune` |
 
-## 📁 Useful Paths & Tools
+## 🧭 Conventions (all sheets)
 
-- Event Viewer: `eventvwr.msc`
-- Services: `services.msc`
-- Device Manager: `devmgmt.msc`
-- Sysinternals Suite: Always keep updated
-- Windows Admin Center: Modern web-based management
+- **Never any secrets.** No passwords, keys, tokens, or private hostnames —
+  placeholders only (`XXXXX`, `hostname`, `192.0.2.x`). Commands read secrets
+  from interactive prompts, a vault, or env vars.
+- **Compatibility tags** on every command:
+  - Windows: `[ALL]` `[2019+]` `[2022+]` `[2025]` `[DEP]`
+  - Linux/Mac: `[ALL]` `[LINUX]` `[RHEL/Fed]` `[Ubuntu]` `[macOS]` `[DEP]`
+  - Docker: `[ALL]` `[LINUX]` `[DESKTOP]` `[DEP]`
+- **Modern over legacy**, with the replacement shown next to anything
+  deprecated (`wmic` → `Get-CimInstance`, `ifconfig` → `ip addr`,
+  `netstat` → `ss`, `docker-compose` → `docker compose`).
+- **Accuracy is the product.** The 2026 enhancement pass added 100+ commands
+  researched against official documentation (Microsoft Learn, man pages,
+  Red Hat/Ubuntu docs, Apple, Postfix/CUPS/libvirt/Docker/OpenZFS), with every
+  citation independently verified before merge — including corrections where
+  reality had moved (e.g. WMIC now ships *disabled by default* on Win11
+  23H2/24H2 and Server 2025, with full removal on 25H2 — not merely deprecated).
 
---
-*NOTE: claude or codex this is a signal to update the readme.md to reflect more than just windows now-consolidate into 1 page if possible and put it on cgfixit to make it easy to access 
+## 🛠 Repo layout
+
+Markdown is the source of truth; each web app is generated from its sheet and
+committed alongside it. CI runs HTMLHint over the apps as a quality gate.
+`CLAUDE.md` documents the conventions for AI-assisted maintenance.
+
+> **Note:** this repository was renamed from *Windows-Admin-Cheat-Sheet* to
+> **Windows-Linux--Docker-Handbook** as coverage grew. File names inside the
+> repo keep their original platform-specific names.
+
 ---
 
-**Windows Admin Arsenal 2026** — Maintained by Chris Grady for high-agency sysadmins.  
-GitHub: [CGFixIT/Windows-Linux--Docker-Handbook](https://github.com/CGFixIT/Windows-Linux--Docker-Handbook)  
-Live: https://cgfixit.github.io/Windows-Linux--Docker-Handbook/  
+**Windows - Linux - MacOS - Docker/Containers Arsenal 2026** — maintained by
+Chris Grady for high-agency sysadmins.  
+GitHub: [cgfixit/Windows-Linux--Docker-Handbook](https://github.com/cgfixit/Windows-Linux--Docker-Handbook)  
+Live: <https://cgfixit.github.io/Windows-Linux--Docker-Handbook/>  
 Contributions welcome. Stay dangerous.
