@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="description" content="Single-page Linux and macOS admin cheat sheet: RHEL, Fedora, Ubuntu/Debian, and macOS one-liners with search and copy buttons.">
+    <title>Linux &amp; macOS Admin Arsenal 2026 &bull; @cgfixit &bull; RHEL / Fedora / Ubuntu / macOS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        body { background: #18181b; font-family: system-ui, -apple-system, sans-serif; }
+        pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+        pre code { white-space: pre; }
+        .copy-btn { background: #059669; color: #fff; font-size: 0.75rem; padding: 0.25rem 0.75rem; border-radius: 0.375rem; border: none; cursor: pointer; }
+        .copy-btn:hover { background: #10b981; }
+        .copy-btn.copied { background: #0ea5e9; }
+        #toc::-webkit-scrollbar, main::-webkit-scrollbar { width: 8px; }
+        #toc::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+        .cheat-section.hidden-by-search { display: none; }
+        @media print {
+            header, #toc, .copy-btn, #no-results { display: none !important; }
+            .cheat-section.hidden-by-search { display: block !important; }
+            body { background: #fff; color: #000; }
+        }
+    </style>
+</head>
+<body class="text-zinc-100">
+    <header class="sticky top-0 z-20 border-b-4 border-amber-400 bg-zinc-950 py-4">
+        <div class="max-w-screen-2xl mx-auto px-4 sm:px-6">
+            <div class="flex justify-between items-center flex-wrap gap-4">
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-black tracking-tight">
+                        <i class="fa-brands fa-linux text-amber-400"></i>
+                        <i class="fa-brands fa-apple text-amber-400"></i>
+                        LINUX &amp; macOS ADMIN ARSENAL 2026
+                    </h1>
+                    <p class="text-xs text-zinc-400 mt-1">RHEL &bull; Fedora &bull; Ubuntu / Debian &bull; macOS &mdash; companion to the Windows Admin Arsenal</p>
+                </div>
+                <div class="flex-1 min-w-[200px] max-w-md">
+                    <label for="search" class="sr-only">Search commands</label>
+                    <input id="search" type="text" placeholder="Search any command, tag, or section..." autocomplete="off"
+                           class="w-full bg-zinc-900 border border-amber-400 px-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                           oninput="filterSections()">
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" onclick="window.print()" title="Print" class="px-3 py-2 bg-zinc-700 hover:bg-zinc-600 rounded-lg"><i class="fa-solid fa-print"></i></button>
+                    <button type="button" onclick="copyAll()" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 font-bold rounded-lg text-sm"><i class="fa-solid fa-copy"></i> Copy All</button>
+                    <button type="button" onclick="downloadHtml()" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 font-bold rounded-lg text-sm"><i class="fa-solid fa-download"></i> Download</button>
+                </div>
+            </div>
+            <div class="text-[11px] mt-2 text-zinc-400">
+                <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                No passwords, keys, or secrets included &mdash; placeholders only. Self-contained, dependency-light single-page reference.
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-screen-2xl mx-auto px-4 sm:px-6 py-6 grid lg:grid-cols-[260px,1fr] gap-6">
+        <nav id="toc" aria-label="Table of contents" class="lg:sticky lg:top-28 lg:self-start lg:max-h-[calc(100vh-8rem)] overflow-y-auto text-sm border border-zinc-800 rounded-xl p-3 bg-zinc-950/60">
+            <h2 class="font-black uppercase text-amber-400 text-xs tracking-wider mb-2 px-2">Table of Contents</h2>
+            <div class="space-y-0.5 text-zinc-300">
+<a href="#network-reset-diagnostics-firewall" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">1. Network Reset, Diagnostics &amp; Firewall</a>
+<a href="#dns-dhcp" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">2. DNS / DHCP</a>
+<a href="#static-routes-network-discovery" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">3. Static Routes &amp; Network Discovery</a>
+<a href="#user-sudo-management" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">4. User &amp; Sudo Management</a>
+<a href="#remote-access-ssh" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">5. Remote Access (SSH)</a>
+<a href="#process-management" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">6. Process Management</a>
+<a href="#system-info-health" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">7. System Info &amp; Health</a>
+<a href="#disk-file-storage-operations" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">8. Disk, File &amp; Storage Operations</a>
+<a href="#package-management" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">9. Package Management</a>
+<a href="#software-updates-patching" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">10. Software Updates &amp; Patching</a>
+<a href="#services-init-systems-systemd-launchd" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">11. Services &amp; Init Systems (systemd / launchd)</a>
+<a href="#directory-services-ldap-ad-join" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">12. Directory Services / LDAP / AD Join</a>
+<a href="#mail-postfix" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">13. Mail (Postfix)</a>
+<a href="#virtualization-containers" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">14. Virtualization &amp; Containers</a>
+<a href="#printing-cups" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">15. Printing (CUPS)</a>
+<a href="#remote-execution-automation" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">16. Remote Execution &amp; Automation</a>
+<a href="#shell-bash-general-admin" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">17. Shell / Bash General Admin</a>
+<a href="#logs-journald" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">18. Logs &amp; journald</a>
+<a href="#network-info" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">19. Network Info</a>
+<a href="#legacy-modern-command-equivalents" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">20. Legacy → Modern Command Equivalents</a>
+<a href="#security-hardening" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">21. Security Hardening</a>
+<a href="#repositories-package-sources" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">22. Repositories &amp; Package Sources</a>
+<a href="#storage-lvm-software-raid" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">23. Storage: LVM &amp; Software RAID</a>
+<a href="#zfs-btrfs-truenas-nas" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">24. ZFS / Btrfs (TrueNAS / NAS)</a>
+<a href="#macos-power-tools" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">25. macOS Power Tools</a>
+<a href="#misc-utilities" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">26. Misc Utilities</a>
+<a href="#quick-reference" class="block px-2 py-1 rounded hover:bg-zinc-800 hover:text-amber-300 truncate">Quick Reference</a>
+
+            </div>
+        </nav>
+
+        <main class="space-y-6">
+            <div id="no-results" class="hidden text-center text-zinc-400 py-10 border border-dashed border-zinc-700 rounded-xl">
+                <i class="fa-solid fa-magnifying-glass text-2xl mb-2"></i>
+                <p>No commands match your search.</p>
+            </div>
+<section id="network-reset-diagnostics-firewall" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[1]</span> Network Reset, Diagnostics &amp; Firewall</h3><h4 class="font-bold text-emerald-400 mt-4 mb-1">Restart networking</h4><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># [RHEL/Fed] NetworkManager
+sudo systemctl restart NetworkManager
+nmcli networking off &amp;&amp; nmcli networking on
+
+# [Ubuntu] netplan (config in /etc/netplan/*.yaml)
+sudo netplan apply
+sudo systemctl restart systemd-networkd     # server / netplan-networkd
+sudo systemctl restart NetworkManager       # desktop
+
+# [macOS] bounce an interface (en0 = Wi-Fi or first Ethernet)
+sudo ifconfig en0 down &amp;&amp; sudo ifconfig en0 up
+networksetup -setairportpower en0 off &amp;&amp; networksetup -setairportpower en0 on</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><h4 class="font-bold text-emerald-400 mt-4 mb-1">Flush DNS cache</h4><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># [RHEL/Fed][Ubuntu] systemd-resolved
+sudo resolvectl flush-caches
+resolvectl statistics                        # verify cache activity
+
+# nscd (if used)
+sudo systemctl restart nscd
+
+# [macOS]
+sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><h4 class="font-bold text-emerald-400 mt-4 mb-1">Firewall</h4><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># [RHEL/Fed] firewalld
+firewall-cmd --state
+firewall-cmd --list-all
+sudo firewall-cmd --permanent --add-service=ssh
+sudo firewall-cmd --permanent --add-port=443/tcp
+sudo firewall-cmd --reload
+sudo firewall-cmd --panic-on                 # drop everything (emergency); --panic-off to restore
+
+# [Ubuntu] ufw
+sudo ufw status verbose
+sudo ufw allow OpenSSH                        # or: sudo ufw allow 22/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable &amp;&amp; sudo ufw reload
+
+# [LINUX] nftables / iptables (underlying)
+sudo nft list ruleset
+sudo iptables -L -n -v                        # [DEP] legacy; prefer nft
+
+# [macOS] packet filter (pf) + application firewall
+sudo pfctl -sr                                # show pf rules
+/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setglobalstate on</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><h4 class="font-bold text-emerald-400 mt-4 mb-1">Port &amp; connectivity diagnostics</h4><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># [LINUX] listening sockets w/ owning process (modern)
+ss -tulpn
+ss -tulpn | grep &#x27;:443&#x27;
+# [DEP] netstat -tulpn   → use ss
+
+# [ALL] which process owns a port / file
+sudo lsof -i :443
+sudo lsof -nP -iTCP -sTCP:LISTEN              # all listeners
+
+# [ALL] test a remote port (no telnet needed)
+nc -zv hostname 443
+curl -I https://hostname
+timeout 3 bash -c &#x27;&lt;/dev/tcp/hostname/443&#x27; &amp;&amp; echo open || echo closed
+
+# [ALL] path / latency
+ping -c 4 hostname
+traceroute hostname                           # tracepath on Ubuntu; brew install for macOS extras
+mtr hostname                                  # live traceroute+ping (install mtr)</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><h4 class="font-bold text-emerald-400 mt-4 mb-1">TCP tuning</h4><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># [LINUX] view/set kernel network params (persist in /etc/sysctl.d/*.conf)
+sysctl net.ipv4.tcp_congestion_control
+sudo sysctl -w net.core.rmem_max=16777216
+sudo sysctl --system                          # reload sysctl.d after editing
+
+# [macOS]
+sysctl net.inet.tcp.mssdflt</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="dns-dhcp" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[2]</span> DNS / DHCP</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># --- Show current DNS servers ---
+resolvectl status                             # [RHEL/Fed][Ubuntu] per-link DNS
+cat /etc/resolv.conf                           # [LINUX] effective resolver (often a symlink)
+scutil --dns                                   # [macOS] full resolver config
+networksetup -getdnsservers Wi-Fi              # [macOS] per-service
+
+# --- Set DNS ---
+sudo nmcli con mod &quot;System eth0&quot; ipv4.dns &quot;1.1.1.1 9.9.9.9&quot;   # [RHEL/Fed]
+sudo nmcli con up &quot;System eth0&quot;
+sudo networksetup -setdnsservers Wi-Fi 1.1.1.1 9.9.9.9         # [macOS]
+sudo networksetup -setdnsservers Wi-Fi Empty                   # [macOS] revert to DHCP
+
+# --- DHCP renew ---
+sudo nmcli con down eth0 &amp;&amp; sudo nmcli con up eth0             # [RHEL/Fed]
+sudo dhclient -r &amp;&amp; sudo dhclient                              # [LINUX][DEP] ifupdown/dhclient
+sudo ipconfig set en0 DHCP                                     # [macOS] renew lease
+
+# --- Query DNS ---
+dig +short example.com
+dig example.com MX
+dig @1.1.1.1 example.com                       # query a specific resolver
+host example.com
+nslookup example.com                            # [DEP] prefer dig/host</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="static-routes-network-discovery" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[3]</span> Static Routes &amp; Network Discovery</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># --- Routing table ---
+ip route show                                  # [LINUX]
+netstat -rn                                    # [macOS] (and legacy Linux)
+route -n get default                            # [macOS] default gateway
+
+# --- Add routes ---
+sudo ip route add 192.0.2.0/24 via 192.0.2.1 dev eth0          # [LINUX] runtime
+sudo route -n add -net 192.0.2.0/24 192.0.2.1                  # [macOS] runtime
+# Persist [RHEL/Fed]: nmcli con mod &lt;con&gt; +ipv4.routes &quot;192.0.2.0/24 192.0.2.1&quot;
+# Persist [Ubuntu]:   add a routes: block in /etc/netplan/*.yaml, then netplan apply
+
+# --- Neighbors / ARP ---
+ip neigh                                        # [LINUX] modern
+arp -a                                          # [ALL] legacy-friendly
+
+# --- Discovery / scan a subnet ---
+nmap -sn 192.0.2.0/24                           # [ALL] ping sweep (install nmap)
+avahi-browse -a                                 # [LINUX] mDNS/Bonjour services
+dns-sd -B _ssh._tcp                             # [macOS] browse Bonjour services</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="user-sudo-management" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[4]</span> User &amp; Sudo Management</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># --- Create / modify users [LINUX] ---
+sudo useradd -m -s /bin/bash iadmin            # RHEL/Fed low-level
+sudo adduser iadmin                             # Ubuntu interactive wrapper
+sudo passwd iadmin                              # set password (interactive)
+sudo usermod -aG wheel iadmin                   # [RHEL/Fed] grant sudo
+sudo usermod -aG sudo  iadmin                   # [Ubuntu] grant sudo
+sudo userdel -r iadmin                          # delete user + home
+
+# --- List users / groups [LINUX] ---
+getent passwd                                   # all accounts (local + directory)
+id iadmin                                        # uid/gid/groups
+groups iadmin
+getent group wheel                               # who has sudo (RHEL/Fed)
+
+# --- sudo policy [LINUX] ---
+sudo visudo                                      # edit /etc/sudoers safely
+sudo visudo -f /etc/sudoers.d/iadmin             # drop-in (preferred)
+
+# --- Users on macOS ---
+dscl . -list /Users | grep -v &#x27;^_&#x27;               # real (non-system) users
+sudo sysadminctl -addUser iadmin -fullName &quot;IT Admin&quot; -password -   # &#x27;-&#x27; = prompt
+sudo dseditgroup -o edit -a iadmin -t user admin  # add to admin group
+id iadmin
+
+# --- Who am I / who is on ---
+whoami
+who       # logged-in users
+w         # users + what they&#x27;re running
+last -n 10   # recent logins (Linux; macOS: `last | head`)</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="remote-access-ssh" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[5]</span> Remote Access (SSH)</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># --- Connect ---
+ssh user@hostname
+ssh -p 2222 user@hostname
+ssh -J jump-host user@internal-host             # ProxyJump / bastion
+
+# --- Keys (ed25519 preferred) ---
+ssh-keygen -t ed25519 -C &quot;user@device 2026&quot;
+ssh-copy-id user@hostname                        # install pubkey (Linux)
+# macOS (no ssh-copy-id by default): brew install ssh-copy-id  — or:
+cat ~/.ssh/id_ed25519.pub | ssh user@hostname &#x27;mkdir -p ~/.ssh &amp;&amp; cat &gt;&gt; ~/.ssh/authorized_keys&#x27;
+
+# --- Reusable client config: ~/.ssh/config ---
+#   Host prod
+#     HostName 192.0.2.10
+#     User iadmin
+#     Port 2222
+#     IdentityFile ~/.ssh/id_ed25519
+
+# --- Enable/start the SSH server ---
+sudo systemctl enable --now sshd                 # [RHEL/Fed]
+sudo systemctl enable --now ssh                  # [Ubuntu] (service is &#x27;ssh&#x27;)
+sudo systemsetup -setremotelogin on              # [macOS] enable Remote Login
+
+# --- Copy files ---
+scp file.txt user@hostname:/path/                # simple copy
+rsync -avh --progress src/ user@hostname:/dst/   # resumable, efficient</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="process-management" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[6]</span> Process Management</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># --- List / sort ---
+ps aux
+ps -ef
+ps aux --sort=-%mem | head                       # top memory (Linux)
+ps aux -r | head                                 # top CPU (macOS: -r = sort by CPU)
+top                                              # live; press M (mem) / P (cpu)
+htop                                             # nicer live view (install htop)
+
+# --- Find / signal ---
+pgrep -fl nginx                                  # find PIDs by pattern
+kill 1234                                         # TERM (graceful)
+kill -9 1234                                      # KILL (force)
+pkill -f &quot;python myscript&quot;                        # by command pattern
+killall firefox                                   # by exact process name
+
+# --- Priority ---
+nice -n 10 ./batch.sh                             # start low-priority
+sudo renice -n -5 -p 1234                          # raise priority of running PID
+
+# --- What a process is doing ---
+sudo lsof -p 1234                                  # open files/sockets
+strace -p 1234                                     # [LINUX] syscalls (install strace)
+sudo dtruss -p 1234                                # [macOS] syscalls (needs SIP considerations)</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="system-info-health" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[7]</span> System Info &amp; Health</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># --- OS / version ---
+uname -a
+cat /etc/os-release                               # [LINUX] name + version
+hostnamectl                                       # [LINUX] host, OS, kernel, machine-id
+sw_vers                                           # [macOS] product + build
+system_profiler SPSoftwareDataType                # [macOS] verbose
+
+# --- CPU / memory ---
+lscpu                                             # [LINUX] CPU topology
+nproc                                             # [LINUX] logical cores
+free -h                                           # [LINUX] memory
+vm_stat                                           # [macOS] memory pages
+sysctl -n hw.ncpu hw.memsize                       # [macOS] cores + RAM bytes
+
+# --- Uptime / last boot ---
+uptime
+who -b                                            # [LINUX] boot time
+sysctl -n kern.boottime                            # [macOS]
+
+# --- Hardware / BIOS ---
+sudo dmidecode -t bios,system                      # [LINUX] BIOS + system (install dmidecode)
+lspci; lsusb                                       # [LINUX] PCI/USB devices
+system_profiler SPHardwareDataType                 # [macOS] serial, model, RAM
+
+# --- Disk &amp; SMART health ---
+lsblk -f                                           # [LINUX] block devices + FS
+df -h                                              # free space, all platforms
+sudo smartctl -a /dev/sda                           # [LINUX] SMART (install smartmontools)
+diskutil list                                       # [macOS] disks/partitions
+diskutil info disk0                                 # [macOS] device detail
+
+# --- Sensors / power ---
+sensors                                            # [LINUX] temps (lm_sensors)
+pmset -g                                           # [macOS] power/battery settings</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="disk-file-storage-operations" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[8]</span> Disk, File &amp; Storage Operations</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># --- Space usage ---
+df -h                                             # per-filesystem free space
+du -sh ./*                                        # size of each item here
+du -h --max-depth=1 . | sort -h                    # [LINUX] biggest subdirs
+sudo du -sh ./* | sort -h                          # [macOS] (no --max-depth)
+ncdu /                                             # interactive disk usage (install ncdu)
+
+# --- Find files ---
+find / -xdev -type f -size +500M 2&gt;/dev/null       # files &gt; 500 MB
+find . -name &#x27;*.log&#x27; -mtime +30                    # logs older than 30 days
+find . -type f -printf &#x27;%s\t%p\n&#x27; 2&gt;/dev/null | sort -rn | head -20   # [LINUX] 20 largest
+
+# --- Sync / mirror (⚠ --delete removes extras in dest) ---
+rsync -avh --delete /src/ /dst/                    # local mirror
+rsync -avh --dry-run --delete /src/ /dst/          # PREVIEW first — always
+robocopy_equiv() { rsync -avh --partial --progress &quot;$@&quot;; }   # resumable copy helper
+
+# --- Symlinks / mounts ---
+ln -s /real/path ~/shortcut                        # symlink
+mount | column -t                                  # [LINUX] mounted filesystems
+sudo mount -a                                      # [LINUX] mount everything in /etc/fstab
+blkid                                              # [LINUX] UUIDs for fstab
+diskutil mount /dev/disk2s1                         # [macOS] mount a volume
+
+# --- Show file contents ---
+cat file.txt; less file.txt; tail -f app.log</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="package-management" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[9]</span> Package Management</h3><p class="text-zinc-300 my-1 text-sm leading-relaxed">Cross-platform reference. Pick the column for your OS.</p><div class="overflow-x-auto my-3"><table class="w-full text-sm border border-zinc-700 border-collapse"><thead><tr><th class="border border-zinc-700 px-3 py-2 bg-zinc-800 text-left text-amber-300">Task</th><th class="border border-zinc-700 px-3 py-2 bg-zinc-800 text-left text-amber-300">RHEL/Fedora (<code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">dnf</code>)</th><th class="border border-zinc-700 px-3 py-2 bg-zinc-800 text-left text-amber-300">Ubuntu/Debian (<code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">apt</code>)</th><th class="border border-zinc-700 px-3 py-2 bg-zinc-800 text-left text-amber-300">macOS (<code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">brew</code>)</th></tr></thead><tbody><tr><td class="border border-zinc-700 px-3 py-2">Refresh index</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">sudo dnf check-update</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">sudo apt update</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">brew update</code></td></tr><tr><td class="border border-zinc-700 px-3 py-2">Search</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">dnf search vim</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">apt search vim</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">brew search vim</code></td></tr><tr><td class="border border-zinc-700 px-3 py-2">Install</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">sudo dnf install vim</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">sudo apt install vim</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">brew install vim</code></td></tr><tr><td class="border border-zinc-700 px-3 py-2">Remove</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">sudo dnf remove vim</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">sudo apt remove vim</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">brew uninstall vim</code></td></tr><tr><td class="border border-zinc-700 px-3 py-2">Upgrade all</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">sudo dnf upgrade</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">sudo apt upgrade</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">brew upgrade</code></td></tr><tr><td class="border border-zinc-700 px-3 py-2">Info</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">dnf info vim</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">apt show vim</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">brew info vim</code></td></tr><tr><td class="border border-zinc-700 px-3 py-2">List installed</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">dnf list installed</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">apt list --installed</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">brew list</code></td></tr><tr><td class="border border-zinc-700 px-3 py-2">Which pkg owns file</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">dnf provides /usr/bin/vim</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">dpkg -S /usr/bin/vim</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">brew which-formula</code></td></tr><tr><td class="border border-zinc-700 px-3 py-2">Clean cache</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">sudo dnf clean all</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">sudo apt clean</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">brew cleanup</code></td></tr></tbody></table></div><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># --- Low-level query ---
+rpm -qa | sort                                     # [RHEL/Fed] all installed
+dpkg -l                                            # [Ubuntu] all installed
+rpm -qi httpd                                       # [RHEL/Fed] package details
+
+# --- Universal Linux app formats ---
+sudo snap install code --classic                   # [Ubuntu] snap
+flatpak install flathub org.gimp.GIMP              # [LINUX] flatpak (add flathub remote first)
+
+# --- macOS extras ---
+brew install --cask firefox                        # GUI apps via cask
+brew services list                                 # background services managed by brew
+mas list                                           # Mac App Store apps (brew install mas)</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="software-updates-patching" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[10]</span> Software Updates &amp; Patching</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># --- Apply updates ---
+sudo dnf upgrade --refresh                          # [RHEL/Fed]
+sudo apt update &amp;&amp; sudo apt full-upgrade            # [Ubuntu]
+sudo softwareupdate -ia --verbose                   # [macOS] all Apple updates
+brew update &amp;&amp; brew upgrade                          # [macOS] Homebrew packages
+
+# --- Security-only ---
+sudo dnf upgrade --security                          # [RHEL/Fed]
+sudo unattended-upgrade -d                            # [Ubuntu] run configured auto-updates
+
+# --- Automate ---
+sudo dnf install dnf-automatic &amp;&amp; sudo systemctl enable --now dnf-automatic.timer   # [RHEL/Fed]
+sudo apt install unattended-upgrades &amp;&amp; sudo dpkg-reconfigure unattended-upgrades   # [Ubuntu]
+
+# --- Reboot required? ---
+[ -f /var/run/reboot-required ] &amp;&amp; echo &quot;reboot needed&quot;   # [Ubuntu]
+needs-restarting -r; echo &quot;exit=$?&quot;                        # [RHEL/Fed] (dnf-utils); 1 = reboot
+uname -r                                                    # running kernel vs installed</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="services-init-systems-systemd-launchd" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[11]</span> Services &amp; Init Systems (systemd / launchd)</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># ============ [LINUX] systemd ============
+systemctl status sshd
+sudo systemctl start|stop|restart sshd
+sudo systemctl enable --now sshd                     # enable at boot + start now
+sudo systemctl disable --now sshd
+systemctl list-units --type=service                   # running services
+systemctl --failed                                    # what broke
+sudo systemctl daemon-reload                           # after editing unit files
+systemctl list-unit-files --state=enabled              # enabled-at-boot units
+
+# journald logs for a unit
+journalctl -u sshd -e            # jump to end
+journalctl -u sshd -f            # follow live
+journalctl -u sshd --since &quot;1 hour ago&quot;
+
+# ============ [macOS] launchd ============
+launchctl list | grep -i ssh
+sudo launchctl bootstrap system /Library/LaunchDaemons/com.example.plist   # load
+sudo launchctl bootout   system /Library/LaunchDaemons/com.example.plist   # unload
+launchctl print gui/$(id -u)/com.example.agent          # inspect a job
+# plist locations: ~/Library/LaunchAgents, /Library/LaunchAgents, /Library/LaunchDaemons
+brew services list                                       # Homebrew-managed services
+brew services restart nginx</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="directory-services-ldap-ad-join" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[12]</span> Directory Services / LDAP / AD Join</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># --- Join Active Directory [RHEL/Fed][Ubuntu] (realmd + SSSD) ---
+realm discover ad.example.com
+sudo realm join -U Administrator ad.example.com
+realm list                                            # show joined domain + config
+id user@ad.example.com                                 # verify AD user resolves
+sudo realm leave ad.example.com
+
+# --- Query LDAP ---
+ldapsearch -x -H ldap://dc.example.com -b &quot;dc=example,dc=com&quot; &quot;(sAMAccountName=jdoe)&quot;
+
+# --- macOS AD bind ---
+sudo dsconfigad -add ad.example.com -username admin -computer MAC01
+dscl &quot;/Active Directory/EXAMPLE/All Domains&quot; -read /Users/jdoe   # read an AD user
+dscl . -list /Users                                     # local users</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="mail-postfix" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[13]</span> Mail (Postfix)</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># --- Service + queue ---
+systemctl status postfix                               # [LINUX]
+mailq                                                  # view mail queue
+postqueue -p                                            # same, verbose
+sudo postqueue -f                                       # flush (attempt redelivery)
+sudo postsuper -d ALL                                   # ⚠ delete ALL queued mail
+sudo postsuper -d ALL deferred                          # delete only deferred
+
+# --- Send a test message ---
+echo &quot;test body&quot; | mail -s &quot;test subject&quot; user@example.com   # needs mailutils/s-nail
+
+# --- Logs ---
+journalctl -u postfix -e                                # [systemd]
+sudo tail -f /var/log/maillog                            # [RHEL/Fed]
+sudo tail -f /var/log/mail.log                           # [Ubuntu]</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="virtualization-containers" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[14]</span> Virtualization &amp; Containers</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># ============ KVM / libvirt [LINUX] ============
+virsh list --all                                        # all VMs
+sudo virsh start  vm-name
+sudo virsh shutdown vm-name                              # graceful
+sudo virsh destroy vm-name                               # force off
+virsh dominfo vm-name
+sudo virt-install --name vm1 --memory 4096 --vcpus 2 \
+     --disk size=40 --cdrom /iso/os.iso --os-variant generic
+
+# ============ Containers ============
+podman ps -a            # [RHEL/Fed] daemonless, rootless-friendly
+docker ps -a            # [ALL] where Docker is installed
+podman images; docker images
+podman run --rm -it alpine sh
+docker compose up -d                                    # from a compose.yaml
+
+# ============ macOS ============
+# No native KVM. Use Docker Desktop / Podman machine / UTM / VMware Fusion.
+podman machine init &amp;&amp; podman machine start             # [macOS] podman VM backend
+vmrun list                                              # [macOS] VMware Fusion CLI</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="printing-cups" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[15]</span> Printing (CUPS)</h3><p class="text-zinc-300 my-1 text-sm leading-relaxed">CUPS drives printing on both Linux and macOS.</p><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code>lpstat -p -d                                            # printers + default
+lpstat -t                                               # full status
+lp -d PrinterName file.pdf                               # print
+lpq                                                     # queue
+cancel -a PrinterName                                    # clear queue
+sudo lpadmin -p PrinterName -E -v ipp://192.0.2.50/ipp/print -m everywhere   # add IPP printer
+sudo lpadmin -x PrinterName                              # remove printer
+sudo cupsenable PrinterName; sudo cupsdisable PrinterName
+# Web admin UI: http://localhost:631
+sudo systemctl restart cups                              # [LINUX] restart spooler</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="remote-execution-automation" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[16]</span> Remote Execution &amp; Automation</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># --- Loop over hosts (quick + dependency-free) ---
+for h in host1 host2 host3; do
+  echo &quot;== $h ==&quot;; ssh &quot;$h&quot; &#x27;uptime; df -h /&#x27;
+done
+
+# --- Ansible ad-hoc (agentless) ---
+ansible all -i inventory.ini -m ping
+ansible web -i inventory.ini -a &quot;uptime&quot;
+ansible all -i inventory.ini -b -m dnf -a &quot;name=vim state=latest&quot;   # -b = become root
+
+# --- Parallel SSH ---
+parallel-ssh -h hosts.txt -i &#x27;uptime&#x27;                   # pssh package
+# or GNU parallel:
+parallel -j8 ssh {} &#x27;hostname; uptime&#x27; ::: host1 host2 host3
+
+# --- Persistent sessions for long jobs ---
+tmux new -s work        # detach: Ctrl-b d   |   reattach: tmux attach -t work
+screen -S work          # detach: Ctrl-a d   |   reattach: screen -r work
+nohup ./long-job.sh &amp;   # survive logout, output → nohup.out</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="shell-bash-general-admin" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[17]</span> Shell / Bash General Admin</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># --- Environment / PATH ---
+export EDITOR=vim
+echo &quot;$PATH&quot; | tr &#x27;:&#x27; &#x27;\n&#x27;                              # readable PATH
+env | sort                                              # all env vars
+printenv HOME
+
+# --- History / recall ---
+history 20
+!!            # last command      |  sudo !!  → rerun last with sudo
+!$            # last arg of previous command
+# Ctrl-R      # reverse-search history interactively
+
+# --- Redirection / pipes ---
+cmd &gt; out.txt 2&gt;&amp;1        # stdout+stderr to file
+cmd | tee out.txt         # see output AND save it
+find . -name &#x27;*.tmp&#x27; -print0 | xargs -0 rm -f   # safe bulk action
+
+# --- Permissions ---
+chmod 640 file            # rw-r-----      | chmod +x script.sh
+chown user:group file
+chmod -R u+rwX,go-w dir   # recursive, dirs get +x via X
+
+# --- Job control ---
+./task.sh &amp;   ;  jobs  ;  fg %1  ;  bg %1  ;  disown %1
+
+# --- Dates (ISO 8601) ---
+date +%F                  # 2026-07-22
+date -u +%FT%TZ           # 2026-07-22T18:04:11Z (UTC)
+
+# --- Time a command ---
+time ./script.sh</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="logs-journald" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[18]</span> Logs &amp; journald</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># ============ [LINUX] systemd journal ============
+journalctl -e                     # jump to newest
+journalctl -f                     # follow (like tail -f)
+journalctl -p err -b              # errors since this boot
+journalctl -u nginx --since today
+journalctl --disk-usage; sudo journalctl --vacuum-time=7d   # trim old logs
+dmesg -T | tail -50               # kernel ring buffer (human timestamps)
+
+# ============ Classic log files ============
+sudo tail -f /var/log/messages     # [RHEL/Fed] general
+sudo tail -f /var/log/syslog       # [Ubuntu] general
+sudo tail -f /var/log/secure       # [RHEL/Fed] auth
+sudo tail -f /var/log/auth.log     # [Ubuntu] auth
+
+# ============ [macOS] unified logging ============
+log show --predicate &#x27;eventMessage CONTAINS &quot;error&quot;&#x27; --last 1h
+log stream --level info            # live tail
+log show --last 30m &gt; ~/Desktop/macos-log.txt
+
+# --- Rotation ---
+sudo logrotate -f /etc/logrotate.conf   # force a rotation [LINUX]</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="network-info" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[19]</span> Network Info</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># --- Addresses / links [LINUX] ---
+ip -br addr                        # brief per-interface addresses
+ip addr show
+ip -br link                        # up/down + MAC
+ip route                           # routes + default gateway
+
+# --- Addresses [macOS] ---
+ifconfig                           # all interfaces
+ipconfig getifaddr en0             # just the IPv4 on en0
+networksetup -listallhardwareports # map en0/en1 → Wi-Fi/Ethernet
+route -n get default               # default gateway
+
+# --- Sockets ---
+ss -s                              # [LINUX] summary stats
+ss -tan state established          # [LINUX] established TCP
+
+# --- Bandwidth / live throughput ---
+iftop -i eth0                      # [LINUX] per-connection (install iftop)
+nload                              # [LINUX] in/out graph
+vnstat -d                          # [LINUX] daily history (install vnstat)
+nettop                             # [macOS] per-process network usage</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="legacy-modern-command-equivalents" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[20]</span> Legacy → Modern Command Equivalents</h3><p class="text-zinc-300 my-1 text-sm leading-relaxed">The <code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">net-tools</code> suite is deprecated on modern Linux in favor of <code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">iproute2</code>.</p><div class="overflow-x-auto my-3"><table class="w-full text-sm border border-zinc-700 border-collapse"><thead><tr><th class="border border-zinc-700 px-3 py-2 bg-zinc-800 text-left text-amber-300">Legacy <code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">[DEP]</code></th><th class="border border-zinc-700 px-3 py-2 bg-zinc-800 text-left text-amber-300">Modern</th><th class="border border-zinc-700 px-3 py-2 bg-zinc-800 text-left text-amber-300">Purpose</th></tr></thead><tbody><tr><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">ifconfig</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">ip addr</code></td><td class="border border-zinc-700 px-3 py-2">Interface addresses</td></tr><tr><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">ifconfig eth0 up/down</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">ip link set eth0 up/down</code></td><td class="border border-zinc-700 px-3 py-2">Bring link up/down</td></tr><tr><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">route -n</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">ip route</code></td><td class="border border-zinc-700 px-3 py-2">Routing table</td></tr><tr><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">netstat -tulpn</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">ss -tulpn</code></td><td class="border border-zinc-700 px-3 py-2">Listening sockets</td></tr><tr><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">netstat -rn</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">ip route</code></td><td class="border border-zinc-700 px-3 py-2">Routes</td></tr><tr><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">arp -a</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">ip neigh</code></td><td class="border border-zinc-700 px-3 py-2">Neighbor/ARP table</td></tr><tr><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">iwconfig</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">iw dev</code></td><td class="border border-zinc-700 px-3 py-2">Wireless config</td></tr><tr><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">nslookup</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">dig</code> / <code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">host</code></td><td class="border border-zinc-700 px-3 py-2">DNS lookups</td></tr><tr><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">service x start</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">systemctl start x</code></td><td class="border border-zinc-700 px-3 py-2">Service control</td></tr><tr><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">chkconfig x on</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">systemctl enable x</code></td><td class="border border-zinc-700 px-3 py-2">Enable at boot</td></tr><tr><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">yum</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">dnf</code></td><td class="border border-zinc-700 px-3 py-2">Package manager (RHEL)</td></tr><tr><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">ntpq -p</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">chronyc sources</code></td><td class="border border-zinc-700 px-3 py-2">Time sync status</td></tr><tr><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">top</code> (only)</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">htop</code> / <code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">btop</code></td><td class="border border-zinc-700 px-3 py-2">Live process view</td></tr></tbody></table></div><blockquote class="border-l-4 border-amber-400 pl-3 text-zinc-300 italic my-2">macOS still ships <code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">ifconfig</code>, <code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">netstat</code>, and <code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">route</code> as first-class tools —</blockquote><blockquote class="border-l-4 border-amber-400 pl-3 text-zinc-300 italic my-2">the deprecation above is a <strong>Linux</strong> convention.</blockquote><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="security-hardening" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[21]</span> Security Hardening</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># ============ SELinux [RHEL/Fed] ============
+getenforce                          # Enforcing / Permissive / Disabled
+sestatus
+sudo setenforce 0                   # temp → Permissive (until reboot)
+# Persist: set SELINUX=enforcing in /etc/selinux/config
+sudo ausearch -m avc -ts recent     # recent denials
+sudo restorecon -Rv /var/www        # fix file contexts
+getsebool -a | grep httpd           # list booleans
+
+# ============ AppArmor [Ubuntu] ============
+sudo aa-status                      # profiles + enforcement mode
+sudo aa-enforce  /etc/apparmor.d/usr.sbin.nginx
+sudo aa-complain /etc/apparmor.d/usr.sbin.nginx
+
+# ============ Intrusion / audit [LINUX] ============
+sudo fail2ban-client status                 # jails overview
+sudo fail2ban-client status sshd            # banned IPs for sshd
+sudo aureport --auth --summary              # auditd auth report
+sudo auditctl -w /etc/passwd -p wa -k passwd-watch   # watch a file
+
+# ============ SSH hardening (/etc/ssh/sshd_config) ============
+#   PermitRootLogin no
+#   PasswordAuthentication no        # key-only
+#   sudo systemctl restart sshd  (or &#x27;ssh&#x27; on Ubuntu)
+
+# ============ [macOS] platform security ============
+spctl --status                      # Gatekeeper on/off
+csrutil status                      # System Integrity Protection (set in Recovery)
+fdesetup status                     # FileVault disk encryption
+sudo /usr/libexec/ApplicationFirewall/socketfilterfw --setstealthmode on
+# Audit tool for either platform: `sudo lynis audit system`</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="repositories-package-sources" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[22]</span> Repositories &amp; Package Sources</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># ============ [RHEL/Fed] dnf repos ============
+dnf repolist                                       # enabled repos
+sudo dnf config-manager --add-repo https://example.com/repo.repo
+sudo dnf install epel-release                       # EPEL (RHEL/Rocky/Alma)
+sudo dnf config-manager --set-enabled crb           # CodeReady Builder (RHEL 9)
+# Repo files live in /etc/yum.repos.d/*.repo
+
+# ============ [Ubuntu] apt sources ============
+sudo add-apt-repository ppa:example/ppa             # add a PPA
+sudo add-apt-repository universe                     # enable a component
+# Modern signed-repo pattern (replaces apt-key [DEP]):
+#   curl -fsSL https://example.com/key.gpg | sudo gpg --dearmor -o /etc/apt/keyrings/example.gpg
+#   echo &quot;deb [signed-by=/etc/apt/keyrings/example.gpg] https://example.com/apt stable main&quot; \
+#     | sudo tee /etc/apt/sources.list.d/example.list
+sudo apt update
+
+# ============ [macOS] Homebrew taps ============
+brew tap                                            # list taps
+brew tap homebrew/cask-fonts
+brew untap homebrew/cask-fonts</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="storage-lvm-software-raid" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[23]</span> Storage: LVM &amp; Software RAID</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># ============ LVM [LINUX] ============
+sudo pvcreate /dev/sdb                              # init physical volume
+sudo vgcreate data /dev/sdb                          # volume group
+sudo lvcreate -L 50G -n vol1 data                    # logical volume
+pvs; vgs; lvs                                        # summaries
+# Grow LV + filesystem:
+sudo lvextend -L +20G /dev/data/vol1
+sudo resize2fs /dev/data/vol1                        # ext4
+sudo xfs_growfs /mnt/vol1                            # xfs (grow mounted)
+
+# ============ Software RAID (mdadm) [LINUX] ============
+sudo mdadm --create /dev/md0 --level=1 --raid-devices=2 /dev/sdb /dev/sdc
+cat /proc/mdstat                                     # live status
+sudo mdadm --detail /dev/md0
+sudo mdadm --detail --scan | sudo tee -a /etc/mdadm.conf   # persist config
+
+# ============ [macOS] ============
+diskutil appleRAID list
+diskutil appleRAID create mirror MyRAID JHFS+ disk2 disk3</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="zfs-btrfs-truenas-nas" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[24]</span> ZFS / Btrfs (TrueNAS / NAS)</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># ============ ZFS (OpenZFS on Linux; TrueNAS; macOS via OpenZFS) ============
+zpool status -v
+zpool list
+zpool import                                         # list importable pools
+sudo zpool import -f poolname                          # force import (offline but intact)
+sudo zpool scrub poolname                              # ALWAYS scrub after a force import
+zfs list -t all
+sudo zfs snapshot tank/data@2026-07-22               # snapshot
+sudo zfs rollback tank/data@2026-07-22               # roll back to snapshot
+zpool iostat -v 2                                     # live per-vdev I/O
+
+# ============ Btrfs [LINUX] ============
+sudo btrfs filesystem show
+sudo btrfs filesystem df /mnt                         # accurate space (accounts for RAID/COW)
+sudo btrfs scrub start /mnt; sudo btrfs scrub status /mnt
+sudo btrfs subvolume list /mnt
+sudo btrfs subvolume snapshot /mnt /mnt/.snap/2026-07-22</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="macos-power-tools" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[25]</span> macOS Power Tools</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># --- Preferences via defaults ---
+defaults read com.apple.finder                       # dump a domain
+defaults write com.apple.finder AppleShowAllFiles -bool true &amp;&amp; killall Finder   # show hidden files
+defaults write com.apple.dock autohide -bool true &amp;&amp; killall Dock
+
+# --- Spotlight from the CLI ---
+mdfind &quot;kMDItemDisplayName == &#x27;*.pdf&#x27;wc&quot;             # query the index
+mdls ~/Desktop/file.pdf                              # metadata for a file
+
+# --- Clipboard ---
+pbcopy &lt; file.txt        # copy file into clipboard
+pbpaste &gt; out.txt        # paste clipboard to file
+
+# --- Power / sleep ---
+pmset -g                                             # current settings
+caffeinate -dimsu -t 3600                            # keep awake 1h
+sudo pmset -a hibernatemode 3                         # power management (careful)
+
+# --- System actions ---
+softwareupdate -l                                    # list available updates
+sudo purge                                           # flush inactive memory
+killall Finder; killall Dock; killall SystemUIServer  # restart UI pieces
+screencapture -x ~/Desktop/shot.png                   # silent screenshot
+say &quot;build complete&quot;                                  # TTS notification
+open -a &quot;Safari&quot; https://example.com                  # open app/URL
+osascript -e &#x27;display notification &quot;Done&quot; with title &quot;Job&quot;&#x27;   # GUI notification</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="misc-utilities" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2"><span class="text-amber-400 font-mono">[26]</span> Misc Utilities</h3><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code># --- Shutdown / reboot [LINUX] ---
+sudo shutdown -h now            # halt now      | -h +10 = in 10 min
+sudo shutdown -r now            # reboot now
+sudo systemctl poweroff | reboot
+# [macOS]:
+sudo shutdown -h now; sudo shutdown -r now
+
+# --- Scheduling ---
+crontab -e                      # edit user cron        | crontab -l = list
+# min hour dom mon dow  command   (e.g. `0 2 * * * /path/backup.sh`)
+sudo systemctl list-timers      # [LINUX] systemd timers (modern cron alt)
+# [macOS] use launchd agents (see Section 11) or `cron` (still present)
+
+# --- Archives ---
+tar czf out.tgz dir/            # create gzip tarball
+tar xzf out.tgz                 # extract
+tar tzf out.tgz                 # list contents
+zip -r out.zip dir/; unzip out.zip
+
+# --- Download ---
+curl -fLO https://example.com/file.zip     # -O keep name, -L follow redirects
+wget https://example.com/file.zip
+
+# --- Checksums ---
+sha256sum file.iso              # [LINUX]
+shasum -a 256 file.iso          # [macOS]
+
+# --- Self-signed cert (test/dev only) ---
+openssl req -x509 -newkey rsa:4096 -sha256 -days 365 -nodes \
+  -keyout key.pem -out cert.pem -subj &quot;/CN=mysite.local&quot;
+
+# --- Quick HTTP server (share a folder) ---
+python3 -m http.server 8080
+
+# --- Shares ---
+smbclient -L //server -U user                # [ALL] list SMB shares
+showmount -e nfs-server                       # [LINUX] list NFS exports
+sudo exportfs -ra                              # [LINUX] reload NFS exports
+sharing -l                                     # [macOS] list shared points
+
+# --- Watch a command refresh ---
+watch -n 5 &#x27;df -h /&#x27;           # [LINUX] every 5s (macOS: brew install watch)
+
+# --- Text power tools ---
+grep -rn &quot;TODO&quot; .              # recursive search w/ line numbers
+sed -i &#x27;s/foo/bar/g&#x27; file      # in-place replace (macOS: sed -i &#x27;&#x27; &#x27;s/…/…/g&#x27;)
+awk -F, &#x27;{print $1, $3}&#x27; data.csv   # columns 1 &amp; 3</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><p class="text-zinc-300 my-1 text-sm leading-relaxed">---</p></section>
+<section id="quick-reference" class="cheat-section border border-zinc-700 rounded-xl p-5 bg-zinc-900/60 scroll-mt-24"><h3 class="text-xl font-black mb-2">Quick Reference</h3><h4 class="font-bold text-emerald-400 mt-4 mb-1">Detect the OS / distro</h4><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code>cat /etc/os-release            # [LINUX] ID=, VERSION_ID=
+hostnamectl                    # [LINUX] pretty summary
+rpm -E %rhel                   # [RHEL/Fed] major version (empty on Fedora)
+lsb_release -a                 # [Ubuntu] (install lsb-release)
+sw_vers                        # [macOS] ProductVersion / BuildVersion
+uname -sm                      # kernel + arch on anything (Linux/Darwin)</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div><h4 class="font-bold text-emerald-400 mt-4 mb-1">Package-manager one-glance</h4><div class="overflow-x-auto my-3"><table class="w-full text-sm border border-zinc-700 border-collapse"><thead><tr><th class="border border-zinc-700 px-3 py-2 bg-zinc-800 text-left text-amber-300"></th><th class="border border-zinc-700 px-3 py-2 bg-zinc-800 text-left text-amber-300">RHEL/Fedora</th><th class="border border-zinc-700 px-3 py-2 bg-zinc-800 text-left text-amber-300">Ubuntu/Debian</th><th class="border border-zinc-700 px-3 py-2 bg-zinc-800 text-left text-amber-300">macOS</th></tr></thead><tbody><tr><td class="border border-zinc-700 px-3 py-2">Tool</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">dnf</code> (<code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">yum</code> on RHEL 7)</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">apt</code> (<code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">apt-get</code>)</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">brew</code></td></tr><tr><td class="border border-zinc-700 px-3 py-2">Config</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">/etc/yum.repos.d/</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">/etc/apt/</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">brew tap</code></td></tr><tr><td class="border border-zinc-700 px-3 py-2">Universal apps</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">flatpak</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">snap</code>, <code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">flatpak</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">brew --cask</code>, <code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">mas</code></td></tr></tbody></table></div><h4 class="font-bold text-emerald-400 mt-4 mb-1">Init system at a glance</h4><div class="overflow-x-auto my-3"><table class="w-full text-sm border border-zinc-700 border-collapse"><thead><tr><th class="border border-zinc-700 px-3 py-2 bg-zinc-800 text-left text-amber-300"></th><th class="border border-zinc-700 px-3 py-2 bg-zinc-800 text-left text-amber-300">Linux (systemd)</th><th class="border border-zinc-700 px-3 py-2 bg-zinc-800 text-left text-amber-300">macOS (launchd)</th></tr></thead><tbody><tr><td class="border border-zinc-700 px-3 py-2">Control</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">systemctl</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">launchctl</code></td></tr><tr><td class="border border-zinc-700 px-3 py-2">Logs</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">journalctl</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">log show</code> / <code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">log stream</code></td></tr><tr><td class="border border-zinc-700 px-3 py-2">Enable at boot</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">systemctl enable</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">launchctl bootstrap</code> + plist</td></tr><tr><td class="border border-zinc-700 px-3 py-2">Unit/job files</td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">/etc/systemd/system/</code></td><td class="border border-zinc-700 px-3 py-2"><code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">~/Library/LaunchAgents</code>, <code class="px-1 py-0.5 bg-zinc-800 rounded text-emerald-300">/Library/LaunchDaemons</code></td></tr></tbody></table></div><h4 class="font-bold text-emerald-400 mt-4 mb-1">Handy installs to make a box comfortable</h4><div class="relative group my-3"><pre class="bg-zinc-900 border border-zinc-700 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed"><code>sudo dnf install -y htop ncdu tmux git jq tree bind-utils    # [RHEL/Fed]
+sudo apt install -y htop ncdu tmux git jq tree dnsutils      # [Ubuntu]
+brew install htop ncdu tmux git jq tree                       # [macOS]</code></pre><button type="button" onclick="copyBlock(this)" class="copy-btn absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-copy"></i> Copy</button></div></section>
+        </main>
+    </div>
+
+    <footer class="max-w-screen-2xl mx-auto px-4 sm:px-6 pb-10 pt-4 text-center text-xs text-zinc-500 border-t border-zinc-800 mt-6">
+        <p><strong class="text-zinc-300">Linux &amp; macOS Admin Arsenal 2026</strong> &mdash; companion to the <a href="./Windows-Admin-Cheat-Sheet.html" class="text-sky-400 underline">Windows Admin Arsenal</a>.</p>
+        <p class="mt-1">Maintained by Chris Grady (<a href="https://github.com/cgfixit" class="text-sky-400 underline">@cgfixit</a>) for high-agency sysadmins. Source: <a href="https://github.com/cgfixit/Windows-Admin-Cheat-Sheet" class="text-sky-400 underline">Windows-Admin-Cheat-Sheet</a>.</p>
+    </footer>
+
+    <script>
+        function filterSections() {
+            var q = document.getElementById('search').value.trim().toLowerCase();
+            var sections = document.querySelectorAll('.cheat-section');
+            var visibleCount = 0;
+            sections.forEach(function (sec) {
+                var match = q === '' || sec.innerText.toLowerCase().indexOf(q) !== -1;
+                sec.classList.toggle('hidden-by-search', !match);
+                if (match) visibleCount++;
+            });
+            document.getElementById('no-results').classList.toggle('hidden', visibleCount !== 0);
+        }
+
+        function copyBlock(btn) {
+            var pre = btn.previousElementSibling;
+            var text = pre.innerText;
+            navigator.clipboard.writeText(text).then(function () {
+                var original = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied';
+                btn.classList.add('copied');
+                setTimeout(function () {
+                    btn.innerHTML = original;
+                    btn.classList.remove('copied');
+                }, 1500);
+            });
+        }
+
+        function copyAll() {
+            var blocks = document.querySelectorAll('main pre');
+            var text = Array.prototype.map.call(blocks, function (b) { return b.innerText; }).join('\n\n');
+            navigator.clipboard.writeText(text).then(function () {
+                alert('All commands copied to clipboard (' + blocks.length + ' blocks).');
+            });
+        }
+
+        function downloadHtml() {
+            var blob = new Blob([document.documentElement.outerHTML], { type: 'text/html' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'Linux-Mac-Admin-Cheat-Sheet.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
